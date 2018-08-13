@@ -1,0 +1,16 @@
+*~
+.*.swp
+
+/.classpath
+/.factorypath
+/.idea/
+/.project
+/.settings
+/.vscode/
+/.vs/
+
+/*.iml
+/bazel-*
+/output/
+
+passwords.txt

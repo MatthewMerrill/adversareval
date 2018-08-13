@@ -1,0 +1,2 @@
+float MinimaxMin();
+float MinimaxMax();
