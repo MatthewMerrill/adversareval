@@ -1,10 +1,12 @@
 #include "evaluate.hpp"
 #include "minimax.hpp"
 
-float MinimaxMin() {
-  return evaluate();
+#include <limits>
+
+float MinimaxMin(const GameState* state, int depth) {
+  return evaluate(state);
 }
 
-float MinimaxMax() {
-  return 1 - evaluate();
+float MinimaxMax(const GameState* state, int depth) {
+  return 1 - evaluate(state);
 }

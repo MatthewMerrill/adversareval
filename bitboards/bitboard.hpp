@@ -1,4 +1,4 @@
-#define U64 unsigned __int64
+#define U64 unsigned long long
 
 struct Bitboard {
   const U64 state;
@@ -11,6 +11,7 @@ struct Bitboard {
 
   Bitboard FlipVertical();
   Bitboard FlipHorizontal();
+  Bitboard FlipDiagonal();
 
   Bitboard ShiftRows(int rows=1);
 };

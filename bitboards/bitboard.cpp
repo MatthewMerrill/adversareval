@@ -41,6 +41,22 @@ Bitboard Bitboard::FlipHorizontal() {
   return { x };
 }
 
+// https://www.chessprogramming.org/Flipping_Mirroring_and_Rotating#Diagonal
+Bitboard Bitboard::FlipDiagonal() {
+  U64 t;
+  U64 x = state;
+  const U64 k1 = 0x5500550055005500;
+  const U64 k2 = 0x3333000033330000;
+  const U64 k4 = 0x0f0f0f0f00000000;
+  t  = k4 & (x ^ (x << 28));
+  x ^=       t ^ (t >> 28) ;
+  t  = k2 & (x ^ (x << 14));
+  x ^=       t ^ (t >> 14) ;
+  t  = k1 & (x ^ (x <<  7));
+  x ^=       t ^ (t >>  7) ;
+  return { x };
+}
+
 Bitboard Bitboard::ShiftRows(int rows /* = 1 */) {
   return { state >> (rows << 3) };
 }

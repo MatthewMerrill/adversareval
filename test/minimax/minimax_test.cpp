@@ -2,11 +2,11 @@
 
 #include "minimax/minimax.hpp"
 
-float evaluate() {
+float evaluate(const GameState* state) {
   return .42;
 }
 
 TEST(TestMinimax, Eval) {
-  EXPECT_FLOAT_EQ(0.42, MinimaxMin());
-  EXPECT_FLOAT_EQ(0.58, MinimaxMax());
+  EXPECT_FLOAT_EQ(0.42, MinimaxMin(NULL));
+  EXPECT_FLOAT_EQ(0.58, MinimaxMax(NULL));
 }

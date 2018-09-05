@@ -4,6 +4,7 @@
 
 using namespace std;
 
-void main() {
-  cout << "Evaluating board... " << MinimaxMin();
+int main() {
+  cout << "Evaluating board... " << MinimaxMin(NULL, 0);
+  return 0;
 }
