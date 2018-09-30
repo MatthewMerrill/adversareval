@@ -1,6 +1,8 @@
 *~
 .*.swp
 
+*.gch
+
 /.classpath
 /.factorypath
 /.idea/

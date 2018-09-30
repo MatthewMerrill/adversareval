@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "minimax/minimax.hpp"
+#include "minimax.hpp"
 
 using namespace std;
 

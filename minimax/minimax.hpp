@@ -1,10 +1,10 @@
 #ifndef MINIMAX_H
 #define MINIMAX_H
 
-#include "minimax/evaluate.hpp"
+#include "game.hpp"
+#include "evaluate.hpp"
 
-float MinimaxMin(const GameState* state, int depth);
-float MinimaxMax(const GameState* state, int depth);
+Move MyBestMove(const GameState* state, int depth);
 
 #endif
 
