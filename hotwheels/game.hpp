@@ -9,29 +9,6 @@
 
 #define U64 unsigned long long
 
-struct Move {
-  int fromRow;
-  int fromCol;
-  int toRow;
-  int toCol;
-
-  Move() {}
-
-  Move(int fr, int fc, int tr, int tc) :
-    fromRow(fr),
-    fromCol(fc),
-    toRow(tr),
-    toCol(tc) {}
-
-  void Print() const {
-    printf("%c%c%c%c", fromCol + 'A', fromRow + '1', toCol + 'A', toRow + '1');
-  }
-
-  Move Invert() const {
-    return Move(7 - fromRow, fromCol, 7 - toRow, toCol);
-  }
-};
-
 static U64 FlipVert(U64 state) {
   const U64 k1 = 0x01fc07f01fc07f;
   const U64 k2 = 0x0003fff0003fff;
@@ -41,6 +18,45 @@ static U64 FlipVert(U64 state) {
   x = ( x >> 28)       | ( x       << 28);
   return x;
 }
+
+struct Move {
+
+  U64 from;
+  U64 to;
+
+  Move() {}
+
+  Move(int fr, int fc, int tr, int tc) {
+    from = 1l << (fr*7 + fc);
+    to = 1l << (tr*7 + tc);
+  }
+
+  Move(U64 f, U64 t): from(f), to(t) {}
+
+  int FromRow() const {
+    return (__builtin_ffsll(from)-1) / 7;
+  }
+  int FromCol() const {
+    return (__builtin_ffsll(from)-1) % 7;
+  }
+
+  int ToRow() const {
+    return (__builtin_ffsll(to)-1) / 7;
+  }
+  int ToCol() const {
+    return (__builtin_ffsll(to)-1) % 7;
+  }
+
+  void Print() const {
+    printf("%c%c%c%c",
+        FromCol() + 'A', FromRow() + '1',
+        ToCol() + 'A', ToRow() + '1');
+  }
+
+  Move Invert() const {
+    return Move(7 - FromRow(), FromCol(), 7 - ToRow(), ToCol());
+  }
+};
 
 struct GameState {
   
@@ -135,16 +151,12 @@ struct GameState {
     }
   }
 
-  bool IsValidMove(Move move) const {
-    return true;
-  }
-
   #define ApplyMoveToPieceBoard(board) \
     (((board & ~toBit & ~fromBit) | ((board & fromBit) ? toBit : 0)))
 
   GameState ApplyMove(Move move) const {
-    U64 fromBit = 1l << (move.fromRow*7 + move.fromCol);
-    U64 toBit = 1l << (move.toRow*7 + move.toCol);
+    U64 fromBit = move.from;
+    U64 toBit = move.to;
     return GameState(
       ((this->pieces & ~fromBit) | toBit),
       ApplyMoveToPieceBoard(this->teams),
@@ -182,10 +194,10 @@ struct GameState {
   }
 
   int GetWinner() const {
-    if (cars & (1l << 34)) {
+    if (cars & (1l << 27)) {
       return 1;
     }
-    else if (cars & (1l << 41)) {
+    else if (cars & (1l << 34)) {
       return -1;
     }
     return 0;

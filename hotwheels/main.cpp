@@ -50,6 +50,19 @@ int main() {
   for (;;) {
     winner = state.GetWinner();
     if (winner) {
+      clearExceptHeader();
+      if (move != NULL) {
+        state.PrintHighlighting(move);
+        std::cout << "Computer moved: ";
+        move->Print();
+        std::cout << " (";
+        move->Invert().Print();
+        std::cout << ")"<< std::endl;
+      }
+      else {
+        state.Print();
+      }
+      std::cout << "We have a winner!" << std::endl;
       if (winner == 1) {
         std::cout << "You won!" << std::endl;
       }
@@ -59,6 +72,9 @@ int main() {
       else {
         std::cout << "Somebody wins!" << std::endl;
       }
+      std::cin.ignore();
+      std::cin.ignore();
+      break;
     }
     if (turn) {
       clearExceptHeader();
@@ -73,11 +89,12 @@ int main() {
         std::cout << std::endl;
       }
       std::cout << "Computer is thinking... " << std::endl;
-      ProgBar prog;
+      std::cout << "\x1B[25;1H" << std::flush;
+      //ProgBar prog; // TODO: fix
       GameState inv = state.Invert();
-      *move = MyBestMove(&inv, 7).Invert();
+      *move = MyBestMove(&inv).Invert();
       state = state.ApplyMove(*move);
-      prog.ForceStop();
+      //prog.ForceStop();
     } else {
       clearExceptHeader();
       if (move == NULL) {
@@ -88,7 +105,9 @@ int main() {
         state.PrintHighlighting(move);
         std::cout << "Computer moved: ";
         move->Print();
-        std::cout << std::endl;
+        std::cout << " (";
+        move->Invert().Print();
+        std::cout << ")"<< std::endl;
       }
       std::cout << "Moves available: " << std::endl << "[";
       std::vector<Move> moves = GetMoves(&state);
@@ -102,13 +121,19 @@ int main() {
       }
       std::cout << std::endl << "]" << std::endl;
 
-      std::cout << "Where would you like to move?" << std::endl;
-      std::cin >> input;
-      *move = Move(input[1]-'1', input[0]-'A', input[3]-'1', input[2]-'A');
-      state = state.ApplyMove(*move);
-
-      clearExceptHeader();
-      std::cout << "I would have moved you to " << std::endl;
+      for (;;) {
+        std::cout << "Where would you like to move?" << std::endl;
+        std::cin >> input;
+        Move inputMove = Move(input[1]-'1', input[0]-'A', input[3]-'1', input[2]-'A');
+        if (IsValidMove(&state, inputMove)) { 
+          *move = inputMove;
+          state = state.ApplyMove(*move);
+          break;
+        }
+        else {
+          std::cout << "Invalid Move!" << std::endl;
+        }
+      }
     }
     turn ^= 1;
   }

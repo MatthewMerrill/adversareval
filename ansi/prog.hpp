@@ -3,11 +3,11 @@
 #include <unistd.h>
 
 static void printProgress(int t) {
-  std::cout << "\x1B[25;1H\x1B[2KTh";
+  std::cout << "\x1B[s\x1B[25;1H\x1B[2KTh";
   for (int i = 0; i < 73; ++i) {
     std::cout << ((t * 73 >= i * 5000) ? "i" : " ");
   }
-  std::cout << "nking" << std::endl;
+  std::cout << "nking\x1B[u" << std::flush;
 }
 
 static void progressThread() {
@@ -17,7 +17,7 @@ static void progressThread() {
     printProgress(t);
     usleep(step * 1000);
   }
-  std::cout << "\x1B[25;1H\x1B[2KDone Thinking!" << std::endl;
+  std::cout << "\x1B[s\x1B[25;1H\x1B[2KDone Thinking!\x1B[u" << std::flush;
 }
 
 struct ProgBar {
@@ -25,6 +25,7 @@ struct ProgBar {
   std::thread thread;
 
   ProgBar() : thread(progressThread) {
+    std::cout << std::endl;
     //thread.detach();
   }
 

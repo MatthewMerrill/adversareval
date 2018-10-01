@@ -4,7 +4,8 @@
 #include "game.hpp"
 #include "evaluate.hpp"
 
-Move MyBestMove(const GameState* state, int depth);
+Move MyBestMove(const GameState* state);
+Move MyBestMoveAtDepth(const GameState* state, int depth);
 
 #endif
 

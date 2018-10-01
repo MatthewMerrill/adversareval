@@ -100,7 +100,8 @@ U64 MovesForBishop(const GameState* state, U64 pos) {
   return positions;
 }
 
-void AppendMoves(int fr, int fc, U64 moves, std::vector<Move>* ls) {
+void AppendMoves(U64 bit, U64 moves, std::vector<Move>* ls) {
+  /*
   U64 bit = 1l;
   for (int r = 0; r < 8; ++r) {
     for (int c = 0; c < 7; ++c) {
@@ -109,6 +110,11 @@ void AppendMoves(int fr, int fc, U64 moves, std::vector<Move>* ls) {
       }
       bit <<= 1;
     }
+  }//*/
+  int idx; 
+  while ((idx = __builtin_ffsll(moves))) {
+    moves ^= 1l << (idx - 1);
+    ls->push_back(Move(bit, 1l << (idx-1)));
   }
 }
 
@@ -119,7 +125,7 @@ const int CAR_POSITIONS[] = {
 void MaybeAppendCarMove(
     std::vector<Move>* moves,
     const GameState* state, int c) {
-  if (c < 6 && !(state->pieces & (1 << (CAR_POSITIONS[c+1]*7 + c+1)))) {
+  if (c < 6 && !(state->pieces & (1l << (CAR_POSITIONS[c+1]*7 + c+1)))) {
     moves->push_back(Move(CAR_POSITIONS[c], c, CAR_POSITIONS[c+1], c+1));
   }
 }
@@ -128,34 +134,53 @@ std::vector<Move> GetMoves(const GameState* state) {
   std::vector<Move> moves;
   U64 bit = 1l;
   U64 teamPieces = state->pieces & ~state->teams;
-  for (int r = 0; r < 8; ++r) {
-    for (int c = 0; c < 7; ++c) {
-      if (teamPieces & bit) {
-        if (bit & state->knights) {
-          AppendMoves(r, c, MovesForKnight(state, bit), &moves);
-        }
-        else if (bit & state->pawns) {
-          AppendMoves(r, c, MovesForPawn(state, bit), &moves);
-        }
-        else if (bit & state->rooks) {
-          AppendMoves(r, c, MovesForRook(state, bit), &moves);
-        }
-        else if (bit & state->bishops) {
-          AppendMoves(r, c, MovesForBishop(state, bit), &moves);
-        }
-        else if (bit & state->cars) {
-          MaybeAppendCarMove(&moves, state, c);
-        }
-        else {
-          std::cerr << "Uh idk" << std::endl;
-        }
-      }
-      bit <<= 1;
+  int carcol = 0;
+  //for (int r = 0; r < 8; ++r) {
+  //  for (int c = 0; c < 7; ++c) {
+  int idx; 
+  while ((idx = __builtin_ffsll(teamPieces))) {
+    bit = 1l << (idx - 1);
+    teamPieces ^= bit;
+    if (bit & state->knights) {
+      AppendMoves(bit, MovesForKnight(state, bit), &moves);
     }
+    else if (bit & state->pawns) {
+      AppendMoves(bit, MovesForPawn(state, bit), &moves);
+    }
+    else if (bit & state->rooks) {
+      AppendMoves(bit, MovesForRook(state, bit), &moves);
+    }
+    else if (bit & state->bishops) {
+      AppendMoves(bit, MovesForBishop(state, bit), &moves);
+    }
+    else if (bit & state->cars) {
+      int c = (idx - 1) % 7;
+      MaybeAppendCarMove(&moves, state, c);
+      carcol = c;
+    }
+    else {
+      std::cerr << "Uh idk" << std::endl;
+    }
+  }
+  if (moves.size() == 0) {
+    moves.push_back(
+      Move(
+        CAR_POSITIONS[carcol], carcol,
+        CAR_POSITIONS[carcol+1], carcol+1));
   }
   return moves;
 }
 
+
+bool IsValidMove(const GameState* state, Move move) {
+  std::vector<Move> moves = GetMoves(state);
+  for (const Move m : moves) {
+    if (m.from == move.from && m.to == move.to) {
+      return true;
+    }
+  }
+  return false;
+}
 
 int maina() {
   GameState* state = new GameState();
