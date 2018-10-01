@@ -33,7 +33,8 @@ int main() {
   GameState state = GameState();
   int turn;
 
-  std::cout << "\x1B[2J";
+  std::cout << "\x1B[1;1H\x1B[2J" << std::flush;
+  std::cout << "\x1B[1;1H" << std::flush;
   //std::cout << adversareval3d << std::endl;
   printGooglyHeader(adversarevalBlocks, 3 * 12, "\u2593", 80);
   std::cout << std::endl;
