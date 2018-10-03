@@ -1,21 +1,22 @@
 #include <iostream>
 
+#include "bitscan.hpp"
 #include "movegen.hpp"
 
 U64 MovesForKnight(const GameState* state, U64 pos) {
   U64 positions = 0;
   // See https://go.mattmerr.com/bitboardhex
   // Backwards Attacks
-  positions |= (pos & 0x3e7cf9f3e7cf80) >> -(-1*7 + 2);
-  positions |= (pos & 0xf9f3e7cf9f3e00) >> -(-1*7 - 2);
-  positions |= (pos & 0x7efdfbf7efc000) >> -(-2*7 + 1);
-  positions |= (pos & 0xfdfbf7efdf8000) >> -(-2*7 - 1);
+  positions |= (pos & 0x3e7cf9f3e7cf80ULL) >> -(-1*7 + 2);
+  positions |= (pos & 0xf9f3e7cf9f3e00ULL) >> -(-1*7 - 2);
+  positions |= (pos & 0x7efdfbf7efc000ULL) >> -(-2*7 + 1);
+  positions |= (pos & 0xfdfbf7efdf8000ULL) >> -(-2*7 - 1);
   positions &= (state->pieces & state->teams);
 
-  positions |= (pos & 0x007cf9f3e7cf9f) << (+1*7 + 2);
-  positions |= (pos & 0x01f3e7cf9f3e7c) << (+1*7 - 2);
-  positions |= (pos & 0x0001fbf7efdfbf) << (+2*7 + 1);
-  positions |= (pos & 0x0003f7efdfbf7e) << (+2*7 - 1);
+  positions |= (pos & 0x007cf9f3e7cf9fULL) << (+1*7 + 2);
+  positions |= (pos & 0x01f3e7cf9f3e7cULL) << (+1*7 - 2);
+  positions |= (pos & 0x0001fbf7efdfbfULL) << (+2*7 + 1);
+  positions |= (pos & 0x0003f7efdfbf7eULL) << (+2*7 - 1);
   positions &= ~(state->pieces & ~state->teams);
   positions &= ~state->cars;
   return positions;
@@ -25,11 +26,11 @@ U64 MovesForPawn(const GameState* state, U64 pos) {
   U64 positions = 0;
   // See https://go.mattmerr.com/bitboardhex
   // Pawn Attacks
-  positions |= (pos & 0x00fdfbf7efdfbf) << (1*7 + 1);
-  positions |= (pos & 0x01fbf7efdfbf7e) << (1*7 - 1);
+  positions |= (pos & 0x00fdfbf7efdfbfULL) << (1*7 + 1);
+  positions |= (pos & 0x01fbf7efdfbf7eULL) << (1*7 - 1);
   positions &= (state->pieces & state->teams);
 
-  positions |= ((pos & 0x01ffffffffffff) << (1*7)) & ~(state->pieces);
+  positions |= ((pos & 0x01ffffffffffffULL) << (1*7)) & ~(state->pieces);
   positions &= ~(state->pieces & ~state->teams);
   positions &= ~state->cars;
   return positions;
@@ -76,12 +77,12 @@ U64 MovesForRook(const GameState* state, U64 pos) {
   // See https://go.mattmerr.com/bitboardhex
   U64 positions = 0;
   // Attacks
-  positions |= ProjectFwd(state, pos, 0x7efdfbf7efdfbf, 1);
-  positions |= ProjectBwd(state, pos, 0xfdfbf7efdfbf7e, 1);
-  positions |= ProjectBwd(state, pos, 0xffffffffffff80, 7);
+  positions |= ProjectFwd(state, pos, 0x7efdfbf7efdfbfULL, 1);
+  positions |= ProjectBwd(state, pos, 0xfdfbf7efdfbf7eULL, 1);
+  positions |= ProjectBwd(state, pos, 0xffffffffffff80ULL, 7);
   positions &= (state->pieces & state->teams);
 
-  positions |= ProjectFwd(state, pos, 0x01ffffffffffff, 7);
+  positions |= ProjectFwd(state, pos, 0x01ffffffffffffULL, 7);
   positions &= ~state->cars;
   return positions;
 }
@@ -90,12 +91,12 @@ U64 MovesForBishop(const GameState* state, U64 pos) {
   // See https://go.mattmerr.com/bitboardhex
   U64 positions = 0;
   // Attacks
-  positions |= ProjectBwd(state, pos, 0xfdfbf7efdfbf00, 8);
-  positions |= ProjectBwd(state, pos, 0x7efdfbf7efdf80, 6);
+  positions |= ProjectBwd(state, pos, 0xfdfbf7efdfbf00ULL, 8);
+  positions |= ProjectBwd(state, pos, 0x7efdfbf7efdf80ULL, 6);
   positions &= (state->pieces & state->teams);
 
-  positions |= ProjectFwd(state, pos, 0x00fdfbf7efdfbf, 8);
-  positions |= ProjectFwd(state, pos, 0x01fbf7efdfbf7e, 6);
+  positions |= ProjectFwd(state, pos, 0x00fdfbf7efdfbfULL, 8);
+  positions |= ProjectFwd(state, pos, 0x01fbf7efdfbf7eULL, 6);
   positions &= ~state->cars;
   return positions;
 }
@@ -112,9 +113,9 @@ void AppendMoves(U64 bit, U64 moves, std::vector<Move>* ls) {
     }
   }//*/
   int idx; 
-  while ((idx = __builtin_ffsll(moves))) {
-    moves ^= 1l << (idx - 1);
-    ls->push_back(Move(bit, 1l << (idx-1)));
+  while ((idx = bitscanll(moves))) {
+    moves ^= 1ULL << (idx - 1);
+    ls->push_back(Move(bit, 1ULL << (idx-1)));
   }
 }
 
@@ -125,21 +126,21 @@ const int CAR_POSITIONS[] = {
 void MaybeAppendCarMove(
     std::vector<Move>* moves,
     const GameState* state, int c) {
-  if (c < 6 && !(state->pieces & (1l << (CAR_POSITIONS[c+1]*7 + c+1)))) {
+  if (c < 6 && !(state->pieces & (1ULL << (CAR_POSITIONS[c+1]*7 + c+1)))) {
     moves->push_back(Move(CAR_POSITIONS[c], c, CAR_POSITIONS[c+1], c+1));
   }
 }
 
 std::vector<Move> GetMoves(const GameState* state) {
   std::vector<Move> moves;
-  U64 bit = 1l;
+  U64 bit = 1ULL;
   U64 teamPieces = state->pieces & ~state->teams;
   int carcol = 0;
   //for (int r = 0; r < 8; ++r) {
   //  for (int c = 0; c < 7; ++c) {
   int idx; 
-  while ((idx = __builtin_ffsll(teamPieces))) {
-    bit = 1l << (idx - 1);
+  while ((idx = bitscanll(teamPieces))) {
+    bit = 1ULL << (idx - 1);
     teamPieces ^= bit;
     if (bit & state->knights) {
       AppendMoves(bit, MovesForKnight(state, bit), &moves);

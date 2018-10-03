@@ -22,6 +22,8 @@ static float randomUniform01() {
 }
 
 Move MyBestMove(const GameState* state) {
+  // Seed with current time https://stackoverflow.com/a/14914657/3188059
+  srand(time(NULL));
   int depth = 2;
   start = time(NULL); 
   Move m;
@@ -39,8 +41,6 @@ Move MyBestMove(const GameState* state) {
 }
 
 Move MyBestMoveAtDepth(const GameState* state, int depth) {
-  // Seed with current time https://stackoverflow.com/a/14914657/3188059
-  srand(time(NULL));
   float value = -1;
   Move best;
   std::vector<Move> childMoves = GetMoves(state);

@@ -1,4 +1,15 @@
 cc_binary(
+  name = "ansicompattest",
+  srcs =
+    glob([
+        "ansicompattest/**/*.cpp",
+        "ansi/**/*.cpp",
+        "ansi/**/*.hpp",
+    ]),
+  copts = ["-Iansi", "-std=c++11"],
+)
+
+cc_binary(
   name = "tictactoe",
   srcs =
     glob([
@@ -32,3 +43,16 @@ cc_binary(
   copts = ["-Iinclude"],
 )
 
+cc_test(
+  name = "transpositiontables_test",
+  srcs =
+    glob([
+      "transpositiontables/**/*.cpp",
+      "transpositiontables/**/*.hpp",
+      "test/transpositiontables/**/*_test.cpp",
+    ]),
+  copts = ["-Iexternal/gtest/include"],
+  deps = [
+      "@gtest//:gtest_main",
+  ],
+)

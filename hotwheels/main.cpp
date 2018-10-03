@@ -1,8 +1,12 @@
 #include <iostream>
 #include <stdlib.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "ansi.hpp"
-#include "prog.hpp"
+#include "bitscan.hpp"
 #include "game.hpp"
 #include "minimax.hpp"
 #include "movegen.hpp"
@@ -20,14 +24,30 @@ void clearExceptHeader() {
 }
 
 void enableAltScreen() {
-  std::cout << "\x1B[?1049h";
+  //std::cout << "\x1B[?1049h";
 }
 
 void disableAltScreen() {
-  std::cout << "\x1B[?1049lThank you for playing!" << std::endl;
+  //std::cout << "\x1B[?1049lThank you for playing!" << std::endl;
 }
 
 int main() {
+// https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+#ifdef _WIN32
+  // Set output mode to handle virtual terminal sequences
+  HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+  if (hOut == INVALID_HANDLE_VALUE) {
+    return GetLastError();
+  }
+  DWORD dwMode = 0;
+  if (!GetConsoleMode(hOut, &dwMode)) {
+    return GetLastError();
+  }
+  dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+  if (!SetConsoleMode(hOut, dwMode)) {
+    return GetLastError();
+  }
+#endif
   enableAltScreen();
   atexit(disableAltScreen);
   GameState state = GameState();
@@ -35,14 +55,22 @@ int main() {
 
   std::cout << "\x1B[1;1H\x1B[2J" << std::flush;
   std::cout << "\x1B[1;1H" << std::flush;
-  //std::cout << adversareval3d << std::endl;
-  printGooglyHeader(adversarevalBlocks, 3 * 12, "\u2593", 80);
+#ifdef _WIN32
+#define boxchar "#"
+#else
+#define boxchar "\u2588"
+#endif
+  printGooglyHeader(adversarevalBlocks, 3 * 12, boxchar, 80);
   std::cout << std::endl;
-  printHeader(hotwheelschess, 3 * 15, RED + 30, YELLOW + 30, "\u2593", 80);
+  printHeader(hotwheelschess, 3 * 15, RED + 30, YELLOW + 30, boxchar, 80);
   textattr(28);
   std::cout << std::endl << std::endl << "Are you going first (0)? or am I (1)? 0/1: ";
   std::cin >> turn;
-  std::cout << std::endl;
+
+  if (turn != 0 && turn != 1) {
+    std::cout << "Invalid option... I'll assume you don't want to play." << std::endl;
+    return 0;
+  }
 
   char input[4];
   Move* move = NULL;

@@ -6,12 +6,13 @@
 #include <stdio.h>
 
 #include "ansi.hpp"
+#include "bitscan.hpp"
 
 #define U64 unsigned long long
 
 static U64 FlipVert(U64 state) {
-  const U64 k1 = 0x01fc07f01fc07f;
-  const U64 k2 = 0x0003fff0003fff;
+  const U64 k1 = 0x01fc07f01fc07fULL;
+  const U64 k2 = 0x0003fff0003fffULL;
   U64 x = state;
   x = ((x >>  7) & k1) | ((x & k1) <<  7);
   x = ((x >> 14) & k2) | ((x & k2) << 14);
@@ -27,24 +28,24 @@ struct Move {
   Move() {}
 
   Move(int fr, int fc, int tr, int tc) {
-    from = 1l << (fr*7 + fc);
-    to = 1l << (tr*7 + tc);
+    from = 1ULL << (fr*7 + fc);
+    to = 1ULL << (tr*7 + tc);
   }
 
   Move(U64 f, U64 t): from(f), to(t) {}
 
   int FromRow() const {
-    return (__builtin_ffsll(from)-1) / 7;
+    return (bitscanll(from)-1) / 7;
   }
   int FromCol() const {
-    return (__builtin_ffsll(from)-1) % 7;
+    return (bitscanll(from)-1) % 7;
   }
 
   int ToRow() const {
-    return (__builtin_ffsll(to)-1) / 7;
+    return (bitscanll(to)-1) / 7;
   }
   int ToCol() const {
-    return (__builtin_ffsll(to)-1) % 7;
+    return (bitscanll(to)-1) % 7;
   }
 
   void Print() const {
@@ -69,13 +70,14 @@ struct GameState {
   U64 pawns;
 
   GameState():
-    pieces(0b00000010000010001111111110111111011001111100000100000001),
-    teams(0b00000010000010001111111110110000000000000000000000000000),
-    cars(0b00000010000000000000000000000000000000000000000000000001),
-    knights(0b00000000000000000000000000110000011000000000000000000000),
-    bishops(0b00000000000000001100000000000000000001100000000000000000),
-    rooks(0b00000000000000000001100000000000000000001100000000000000),
-    pawns(0b00000000000010000010011110001111000000010000000100000000) {
+    pieces(0x208ffbf67c101ULL),
+    teams(0x208ffb0000000ULL),
+    cars(0x2000000000001ULL),
+    knights(0x30600000ULL),
+    bishops(0xc000060000ULL),
+    rooks(0x180000c000ULL),
+    pawns(0x8278f010100ULL) {
+      std::cout << std::endl << std::endl << bitscanll(12) << std::endl;
       if (pieces != (cars | knights | bishops | rooks | pawns)) {
         std::cerr << "WARN! Pieces Board != BitwiseOR of piece boards!" << std::endl;
         PrintComponents();
@@ -106,14 +108,14 @@ struct GameState {
         if (1&(r^c)) {
           textcolor(
               BRIGHT,
-              (teams & (1l<<(r*7+c))) ? RED : BLUE,
+              (teams & (1ULL<<(r*7+c))) ? RED : BLUE,
               BLACK
               );
         }
         else {
           textcolor(
               RESET,
-              (teams & (1l<<(r*7+c))) ? RED : BLUE,
+              (teams & (1ULL<<(r*7+c))) ? RED : BLUE,
               WHITE
               );
         }
@@ -130,7 +132,7 @@ struct GameState {
   }
 
   void PrintChar(int r, int c) const {
-    U64 bit = 1l << (r * 7 + c);
+    U64 bit = 1ULL << (r * 7 + c);
     if (cars & bit) {
       std::cout << ((teams & bit) ? "_C_" : ".C.");
     }
@@ -187,17 +189,17 @@ struct GameState {
   void PrintBoard(U64 board) const {
     for (int r = 0; r < 8; ++r) {
       for (int c = 0; c < 7; ++c) {
-        std::cout << ((board & (1l << (r*7 + c))) ? 1 : 0);
+        std::cout << ((board & (1ULL << (r*7 + c))) ? 1 : 0);
       }
       std::cout << std::endl;
     }
   }
 
   int GetWinner() const {
-    if (cars & (1l << 27)) {
+    if (cars & (1ULL << 27)) {
       return 1;
     }
-    else if (cars & (1l << 34)) {
+    else if (cars & (17179869184l)) {
       return -1;
     }
     return 0;
