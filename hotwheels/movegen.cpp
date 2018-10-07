@@ -1,4 +1,5 @@
 #include <iostream>
+#include <stdio.h>
 
 #include "bitscan.hpp"
 #include "movegen.hpp"
@@ -132,14 +133,16 @@ void MaybeAppendCarMove(
 }
 
 std::vector<Move> GetMoves(const GameState* state) {
+  //std::cout << "FINDING MOVES FOR \n";
+  //state->Print();
   std::vector<Move> moves;
-  U64 bit = 1ULL;
+  U64 bit = 0;
   U64 teamPieces = state->pieces & ~state->teams;
-  int carcol = 0;
-  //for (int r = 0; r < 8; ++r) {
-  //  for (int c = 0; c < 7; ++c) {
+  int carcol = -1;
   int idx; 
   while ((idx = bitscanll(teamPieces))) {
+    //printf("%llx", teamPieces);
+    //std::cout << "PIECEAT:" << (idx-1) << std::endl;
     bit = 1ULL << (idx - 1);
     teamPieces ^= bit;
     if (bit & state->knights) {
@@ -158,11 +161,13 @@ std::vector<Move> GetMoves(const GameState* state) {
       int c = (idx - 1) % 7;
       MaybeAppendCarMove(&moves, state, c);
       carcol = c;
+      //std::cout << "ITSA CAR:" << std::endl;
     }
     else {
-      std::cerr << "Uh idk" << std::endl;
+      std::cerr << "Uh idk Err: 23434580" << std::endl;
     }
   }
+  //std::cout << "CARCOL:" << carcol << std::endl;
   if (moves.size() == 0) {
     moves.push_back(
       Move(

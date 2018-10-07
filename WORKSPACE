@@ -9,7 +9,7 @@ new_http_archive(
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 new_http_archive(
     name = "libtensorflow",
-    url = "https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-gpu-linux-x86_64-1.10.1.tar.gz",
+    url = "https://storage.googleapis.com/tensorflow/libtensorflow/libtensorflow-cpu-linux-x86_64-1.10.1.tar.gz",
     build_file = "libtensorflow.BUILD",
 )
 

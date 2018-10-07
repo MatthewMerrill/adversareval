@@ -1,0 +1,4 @@
+bazel build :winprobgen --compilation_mode=opt
+bazel-bin/winprobgen > data/gen6.txt & bazel-bin/winprobgen > data/gen7.txt & bazel-bin/winprobgen > data/gen8.txt & bazel-bin/winprobgen > data/gen9.txt
+bazel-bin/winprobgen > data/gen10.txt & bazel-bin/winprobgen > data/gen11.txt & bazel-bin/winprobgen > data/gen12.txt & bazel-bin/winprobgen > data/gen13.txt
+

@@ -1,8 +1,10 @@
 // tensorflow/cc/example/example.cc
 
-#include "tensorflow/c/c_api.h"
+#include <stdio.h>
+
+#include <tensorflow/c/c_api.h>
 
 int main() {
-  printf("Memes");
+  printf("Hello, %s", TF_Version());
   return 0;
 }

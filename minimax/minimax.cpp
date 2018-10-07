@@ -41,7 +41,7 @@ Move MyBestMove(const GameState* state) {
 }
 
 Move MyBestMoveAtDepth(const GameState* state, int depth) {
-  float value = -1;
+  float value = -10;
   Move best;
   std::vector<Move> childMoves = GetMoves(state);
   if (childMoves.size() == 1) {
@@ -50,6 +50,9 @@ Move MyBestMoveAtDepth(const GameState* state, int depth) {
   int numEq = 0;
   for (const Move move : childMoves) {
     GameState newState = state->ApplyMove(move).Invert();
+    if (newState.GetWinner()) {
+      return move;
+    }
     float nm = -negamax(&newState, depth-1, -1, +1);
     //move.Invert().Print();
     //printf("\t%.3f\t%.3f\n", nm, value);
@@ -59,10 +62,9 @@ Move MyBestMoveAtDepth(const GameState* state, int depth) {
       numEq = 1;
     }
     // Uniformly select from moves with same evaluation
-    else if (nm == value && randomUniform01() * numEq < 1) {
+    else if (nm == value && randomUniform01() * ++numEq < 1) {
       value = nm;
       best = move;
-      numEq += 1;
     }
   }
   return best;
@@ -71,7 +73,7 @@ Move MyBestMoveAtDepth(const GameState* state, int depth) {
 // https://en.wikipedia.org/wiki/Negamax
 // https://en.wikipedia.org/wiki/Negamax#Negamax_with_alpha_beta_pruning
 float negamax(const GameState* state, int depth, float alpha, float beta) {
-  if (depth == 0 || time(NULL) - start > 5) {
+  if (depth == 0) {
     evalsDone++;
     return evaluate(state);
   }

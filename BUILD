@@ -22,6 +22,24 @@ cc_binary(
 )
 
 cc_binary(
+  name = "winprobgen",
+  srcs =
+    glob([
+        "winprobgen/**/*.cpp",
+        "winprobgen/**/*.hpp",
+        "hotwheels/**/*.cpp",
+        "hotwheels/**/*.hpp",
+        "minimax/**/*.cpp",
+        "minimax/**/*.hpp",
+        "ansi/**/*.cpp",
+        "ansi/**/*.hpp",
+    ],
+      exclude=["hotwheels/main.cpp", "hotwheels/evaluate.cpp"]),
+  linkopts = ["-pthread"],
+  copts = ["-Wall", "-Ihotwheels", "-Iwinprobgen", "-Iminimax", "-Iansi", "-std=c++11"],
+)
+
+cc_binary(
   name = "hotwheels",
   srcs =
     glob([
@@ -40,7 +58,7 @@ cc_binary(
   name = "nn",
   srcs = ["nn/nn.c"],
   deps = ["@libtensorflow//:libtensorflow"],
-  copts = ["-Iinclude"],
+  copts = ["-Iexternal/libtensorflow/include"],
 )
 
 cc_test(
