@@ -9,6 +9,7 @@
 #include "bitscan.hpp"
 
 #define U64 unsigned long long
+#define MOVE_ARR_LEN 32
 
 static U64 FULL_BOARD = (1ULL << 56) - 1;
 static U64 FlipVert(U64 state) {
@@ -29,7 +30,7 @@ struct Move {
   U64 from;
   U64 to;
 
-  Move() {}
+  Move(): from(0), to(0) {}
 
   Move(int fr, int fc, int tr, int tc) {
     from = 1ULL << (fr*7 + fc);
@@ -289,7 +290,29 @@ struct GameState {
       FlipVert(this->pawns)
     );
   }
-};
 
+  bool operator==(const GameState &other) const {
+    return pieces == other.pieces
+      && teams == other.teams
+      && cars == other.cars
+      && knights == other.knights
+      && bishops == other.bishops
+      && rooks == other.rooks
+      && pawns == other.pawns;
+  } 
+};
+namespace std {
+  template <> struct hash<GameState> {
+    std::size_t operator()(const GameState& s) const noexcept {
+      return s.pieces
+        ^ s.teams
+        ^ s.cars
+        ^ s.knights
+        ^ s.bishops
+        ^ s.rooks
+        ^ s.pawns;  
+    }
+  };
+}
 #endif
 

@@ -31,6 +31,9 @@ void textattr(int attr);
 void textfg(int fg);
 void textbg(int bg);
 
+void textfg_256(int color);
+void textbg_256(int color);
+
 void resettext();
 
 #endif

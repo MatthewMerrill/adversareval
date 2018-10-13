@@ -49,9 +49,17 @@ cc_binary(
         "minimax/**/*.hpp",
         "ansi/**/*.cpp",
         "ansi/**/*.hpp",
+        "transpositiontables/**/*.cpp",
+        "transpositiontables/**/*.hpp",
     ]),
   linkopts = ["-pthread"],
-  copts = ["-Ihotwheels", "-Iminimax", "-Iansi", "-std=c++11"],
+  copts = [
+      "-Ihotwheels",
+      "-Iminimax",
+      "-Itranspositiontables",
+      "-Iansi",
+      "-std=c++11"
+      ],
 )
 
 cc_binary(
@@ -61,15 +69,35 @@ cc_binary(
   copts = ["-Iexternal/libtensorflow/include"],
 )
 
+py_binary(
+  name = "trainnn",
+  main = "nn/train.py",
+  srcs = ["nn/train.py"],
+)
+
+
 cc_test(
   name = "transpositiontables_test",
   srcs =
     glob([
-      "transpositiontables/**/*.cpp",
-      "transpositiontables/**/*.hpp",
-      "test/transpositiontables/**/*_test.cpp",
-    ]),
-  copts = ["-Iexternal/gtest/include"],
+        "hotwheels/**/*.cpp",
+        "hotwheels/**/*.hpp",
+        "minimax/**/*.cpp",
+        "minimax/**/*.hpp",
+        "ansi/**/*.cpp",
+        "ansi/**/*.hpp",
+        "transpositiontables/**/*.cpp",
+        "transpositiontables/**/*.hpp",
+        "test/transpositiontables/**/*_test.cpp",
+    ], exclude=["hotwheels/main.cpp"]),
+  copts = [
+      "-Ihotwheels",
+      "-Iminimax",
+      "-Itranspositiontables",
+      "-Iansi",
+      "-Iexternal/gtest/include",
+      "-std=c++11",
+      ],
   deps = [
       "@gtest//:gtest_main",
   ],

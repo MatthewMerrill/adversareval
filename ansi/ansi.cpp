@@ -41,10 +41,18 @@ void textfg(int fg) {
   printf("%s", command);
 }
 
+void textfg_256(int color) {
+  printf("%c[38;5;%dm", 0x1B, color);
+}
+
 void textbg(int bg) {
   char command[13];
   std::sprintf(command, "%c[%dm", 0x1B, bg + 40);
   printf("%s", command);
+}
+
+void textbg_256(int color) {
+  printf("%c[48;5;%dm", 0x1B, color);
 }
 
 void resettext() {

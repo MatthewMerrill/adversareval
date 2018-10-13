@@ -1,0 +1,10 @@
+#!/bin/bash
+mkdir -p rvrdata
+
+./winprobgen.exe >> rvrdata/gen_$(hostname)_1.txt & \
+./winprobgen.exe >> rvrdata/gen_$(hostname)_2.txt & \
+./winprobgen.exe >> rvrdata/gen_$(hostname)_3.txt & \
+./winprobgen.exe >> rvrdata/gen_$(hostname)_4.txt & \
+./winprobgen.exe >> rvrdata/gen_$(hostname)_5.txt & \
+./winprobgen.exe >> rvrdata/gen_$(hostname)_6.txt
+

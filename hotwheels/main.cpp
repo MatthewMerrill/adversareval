@@ -11,13 +11,7 @@
 #include "minimax.hpp"
 #include "movegen.hpp"
 
-const char* hotwheelschess[] {
-  "* * * **** ** ********  ***    *** **********",
-  "**** * * * ****** ** *  **    *  ***** ** ** ",
-  "* ** * * **** **  *  *   **   *  * **   ** **",
-  "* * *  * **** *************    *** **********"
-};
-
+#include "ui.hpp"
 
 void clearExceptHeader() {
   std::cout << "\x1b[12;1H" << "\x1B[0J";
@@ -48,21 +42,15 @@ int main() {
     return GetLastError();
   }
 #endif
+  ui::displayAll();
+
   enableAltScreen();
   atexit(disableAltScreen);
+
   GameState state = GameState();
   int turn;
+  ui::displayAll();
 
-  std::cout << "\x1B[1;1H\x1B[2J" << std::flush;
-  std::cout << "\x1B[1;1H" << std::flush;
-#ifdef _WIN32
-#define boxchar "#"
-#else
-#define boxchar "\u2588"
-#endif
-  printGooglyHeader(adversarevalBlocks, 3 * 12, boxchar, 80);
-  std::cout << std::endl;
-  printHeader(hotwheelschess, 3 * 15, RED + 30, YELLOW + 30, boxchar, 80);
   textattr(28);
   std::cout << std::endl << std::endl << "Are you going first (0)? or am I (1)? 0/1: ";
   std::cin >> turn;
@@ -73,24 +61,13 @@ int main() {
   }
 
   char input[4];
-  Move* move = NULL;
+  Move move;
   int winner;
 
   for (;;) {
     winner = state.GetWinner();
     if (winner) {
-      clearExceptHeader();
-      if (move != NULL) {
-        state.PrintHighlighting(move);
-        std::cout << "Computer moved: ";
-        move->Print();
-        std::cout << " (";
-        move->Invert().Print();
-        std::cout << ")"<< std::endl;
-      }
-      else {
-        state.Print();
-      }
+      ui::displayAll();
       std::cout << "We have a winner!" << std::endl;
       if (winner == 1) {
         std::cout << "You won!" << std::endl;
@@ -106,42 +83,27 @@ int main() {
       break;
     }
     if (turn) {
-      clearExceptHeader();
-      if (move == NULL) {
-        state.Print();
-        move = new Move();
-      }
-      else {
-        state.PrintHighlighting(move);
-        std::cout << "You moved: ";
-        move->Print();
-        std::cout << std::endl;
-      }
+      ui::displayAll();
       std::cout << "Computer is thinking... " << std::endl;
-      std::cout << "\x1B[25;1H" << std::flush;
-      //ProgBar prog; // TODO: fix
       GameState inv = state.Invert();
-      *move = MyBestMove(&inv).Invert();
-      state = state.ApplyMove(*move);
-      //prog.ForceStop();
+      move = MyBestMove(&inv).Invert();
+      ui::prevState = state;
+      state = state.ApplyMove(move);
+      ui::curState = state;
+      ui::historyVector.push_back(move);
+      std::cout << "I'm moving to: ";
+      move.Print();
+      std::cout << " (";
+      move.Invert().Print();
+      std::cout << ")";
+      std::cin.ignore();
+      std::cin.ignore();
     } else {
-      clearExceptHeader();
-      if (move == NULL) {
-        state.Print();
-        move = new Move();
-      }
-      else {
-        state.PrintHighlighting(move);
-        std::cout << "Computer moved: ";
-        move->Print();
-        std::cout << " (";
-        move->Invert().Print();
-        std::cout << ")"<< std::endl;
-      }
+      ui::displayAll();
       std::cout << "Moves available: " << std::endl << "[";
       std::vector<Move> moves = GetMoves(&state);
       for (size_t i = 0; i < moves.size(); ++i) {
-        if (i % 8 == 0) {
+        if (i % 11 == 0) {
           std::cout << std::endl;
         }
         std::cout << "  ";
@@ -154,9 +116,13 @@ int main() {
         std::cout << "Where would you like to move?" << std::endl;
         std::cin >> input;
         Move inputMove = Move(input[1]-'1', input[0]-'A', input[3]-'1', input[2]-'A');
+        //Move inputMove = MyBestMoveAtDepth(&state, 5);
         if (IsValidMove(&state, inputMove)) { 
-          *move = inputMove;
-          state = state.ApplyMove(*move);
+          move = inputMove;
+          ui::prevState = state;
+          state = state.ApplyMove(move);
+          ui::curState = state;
+          ui::historyVector.push_back(move);
           break;
         }
         else {

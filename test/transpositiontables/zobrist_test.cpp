@@ -3,6 +3,9 @@
 #include <iostream>
 #include <random>
 
+#include "game.hpp"
+#include "minimax.hpp"
+#include "transpositiontbl.hpp"
 #include "transpositiontables/zobrist.hpp"
 
 TEST(TestZobrist, NullSeed) {
@@ -25,3 +28,14 @@ TEST(TestZobrist, NullSeed) {
     //std::cout << ((r == 3) ? "" : ",") << std::endl;
   }
 }
+
+TEST(TestTable, BasicMap) {
+  GameState state;
+  tt::setValue(&state, {{MMRet::WIN}, 16, 12});
+  MMRet exp = {MMRet::WIN};
+  MMRet act = tt::getValue(&state).val;
+  EXPECT_EQ(exp, act);
+  EXPECT_EQ(16, tt::getValue(&state).depth);
+  EXPECT_EQ(12, tt::getValue(&state).bestMoveIdx);
+}
+

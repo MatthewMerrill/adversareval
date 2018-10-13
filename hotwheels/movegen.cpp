@@ -128,7 +128,8 @@ void MaybeAppendCarMove(
     std::vector<Move>* moves,
     const GameState* state, int c) {
   if (c < 6 && !(state->pieces & (1ULL << (CAR_POSITIONS[c+1]*7 + c+1)))) {
-    moves->push_back(Move(CAR_POSITIONS[c], c, CAR_POSITIONS[c+1], c+1));
+    //moves->push_back(Move(CAR_POSITIONS[c], c, CAR_POSITIONS[c+1], c+1));
+    moves->emplace(moves->begin(), Move(CAR_POSITIONS[c], c, CAR_POSITIONS[c+1], c+1));
   }
 }
 

@@ -46,6 +46,29 @@ GameState MCSelectRoot(GameState state) {
   return ret;
 }
 
+int maintestinggamedepth() {
+  int min = 100, max = 0;
+  double ave = 0;
+  for (int rep = 0; rep < 100000; ++rep) {
+    int depth = 0;
+    GameState state;
+    while (state.GetWinner() == 0) {
+      std::vector<Move> moves = GetMoves(&state);
+      Move chosenMove = moves.at(rand() % moves.size());
+      state = state.ApplyMove(chosenMove);
+      state = state.Invert();
+      depth += 1;
+    }
+    ave += depth / 100000.0;
+    min = (depth < min) ? depth : min;
+    max = (depth > max) ? depth : max;
+    if (rep % 1000 == 0) {
+      printf("%lf %d %d\n", ave, min, max);
+    }
+  }
+  return 0;
+}
+
 int MCWinProbTrial(GameState state, int searchDepth) {
   testRoot = &state;
   while (state.GetWinner() == 0) {
@@ -60,6 +83,9 @@ int MCWinProbTrial(GameState state, int searchDepth) {
       break;
     }
     state = state.Invert();
+    int mcarcol = bitscanll(state.cars) % 7;
+    int tcarcol = bitscanll(state.Invert().cars) % 7;
+    searchDepth = (mcarcol >= 2 || tcarcol >= 3) ? 7 : 0;
     Move chosenHumMove = MyBestMoveAtDepth(&state, searchDepth);
     //printf("\nHUM: ");
     //chosenHumMove.Invert().Print();

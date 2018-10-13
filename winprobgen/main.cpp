@@ -26,11 +26,11 @@ int main() {
   srand(rdtsc());
   char s[128];
   GameState state;
-  for (int i = 0; true; ++i) {
+  for (int i = 0; i < 175; ++i) {
     state = MCSelectRoot(GameState());
     state.Serialize(s);
     //state.Print();
-    printf("%s %.3f\n", s, MCWinProb(state, 5000, 3));
+    printf("%s %.3f\n", s, MCWinProb(state, 7000, 5));
     fflush(stdout);
   }
   return 0;
