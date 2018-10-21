@@ -14,10 +14,15 @@
 #include "historytables.hpp"
 #include "transpositiontbl.hpp"
 
-MMRet negamax(const GameState* state, int depth, MMRet alpha, MMRet beta);
+#define MINIMAX_TIME_CUTOFF 5
+
+
+MMRet negamax(const GameState* state, int depth, int moveBufBase,
+              MMRet alpha, MMRet beta);
 
 U64 evalsDone = 0;
 time_t start = 0;
+Move moveBuf[70 * 30];
 
 static float randomUniform01() {
   // https://stackoverflow.com/a/9879024/3188059
@@ -32,10 +37,10 @@ Move MyBestMove(const GameState* state) {
   hl::resetTable();
   //tt::clear();
   start = time(NULL); 
-  while (time(NULL) - start < 5) {
+  while (depth < 30 && time(NULL) - start < MINIMAX_TIME_CUTOFF) {
     evalsDone = 0;
     Move m = MyBestMoveAtDepth(state, depth);
-    if (m.from == 0) {
+    if (m.fromIdx == -1) {
       printf("ABORT! Interrupted at depth %d\n", depth);
       break;
     }
@@ -50,15 +55,17 @@ Move MyBestMove(const GameState* state) {
 
 Move MyBestMoveAtDepth(const GameState* state, int depth) {
   MMRet value = {MMRet::ABORT};
+  Move* childMoves = (Move*) &moveBuf;
+  int nmoves = GetMoves(state, childMoves);
   Move best;
-  std::vector<Move> childMoves = GetMoves(state);
-  if (childMoves.size() == 1) {
-    return childMoves.at(0);
+  if (nmoves == 1) {
+    return childMoves[0];
   }
   int numEq = 0;
-  for (const Move move : childMoves) {
+  for (int moveIdx = 0; moveIdx < nmoves; ++moveIdx) {
+    Move move = childMoves[moveIdx];
     GameState newState = state->ApplyMove(move).Invert();
-    MMRet nm = negamax(&newState, depth-1, {MMRet::LOSE}, {MMRet::WIN}).InvertOut();
+    MMRet nm = negamax(&newState, depth-1, nmoves, {MMRet::LOSE}, {MMRet::WIN}).InvertOut();
     switch (nm.tag) {
       case MMRet::ABORT:
         return Move();
@@ -80,86 +87,116 @@ Move MyBestMoveAtDepth(const GameState* state, int depth) {
   return best;
 }
 
+using tt::TTRec;
+
 // https://en.wikipedia.org/wiki/Negamax
 // https://en.wikipedia.org/wiki/Negamax#Negamax_with_alpha_beta_pruning
-MMRet negamax(const GameState* state, int depth, MMRet alpha, MMRet beta) {
-  tt::TTRec ttrec = tt::getValue(state);
-  switch (ttrec.val.tag) {
-    case MMRet::WIN:
-    case MMRet::LOSE:
-      return ttrec.val;
-
-    case MMRet::NORMAL:
-      if (ttrec.depth >= depth) {
-        return ttrec.val;
-      } else {
-        // TODO: is this a good idea?
-        //alpha = (alpha < ttrec.val) ? alpha : ttrec.val;
-      }
-      break;
-    default:
-      break;
-  }
+MMRet negamax(const GameState* state, int depth, int moveBufBase,
+              MMRet alpha, MMRet beta) {
   int winner = state->GetWinner();
   if (winner == 1) {
     MMRet ret = {MMRet::WIN};
     ret.depth = depth;
-    tt::setValue(state, {ret, depth, 0});
     return ret;
   }
   else if (winner == -1) {
     MMRet ret = {MMRet::LOSE};
     ret.depth = depth;
-    tt::setValue(state, {ret, depth, 0});
     return ret;
   }
-  if (start != 0 && time(NULL) - start > 5) {
+
+  if (start != 0 && time(NULL) - start > MINIMAX_TIME_CUTOFF) {
     return {MMRet::ABORT};
   }
-  if (depth == 0) {
-    if (tt::hasValue(state)) {
-      printf("WOO\n");
-      return tt::getValue(state).val;
+
+  Move* childMoves = ((Move*) &moveBuf) + moveBufBase;
+  int nmoves = GetMoves(state, childMoves);
+
+  // We have TT value!
+  const auto ttrecPair = tt::getValue(state);
+  if (ttrecPair.first == state->hashCode) {
+    TTRec ttrec = ttrecPair.second;
+    //https://webdocs.cs.ualberta.ca/~tony/OldPapers/icca.Mar1986.pp3-18.pdf
+    if (depth == 0) {
+      return ttrec.val;
     }
+    switch (ttrec.val.tag) {
+      case MMRet::WIN:
+      case MMRet::LOSE:
+        return ttrec.val;
+
+      case MMRet::NORMAL:
+        if (ttrec.depth >= depth) {
+          if (ttrec.bound == tt::Bound::EXACT) {
+            return ttrec.val;
+          }
+          else if (ttrec.bound == tt::Bound::LOWER) {
+            // max(alpha, ttrec.val)
+            alpha = (alpha > ttrec.val) ? alpha : ttrec.val;
+          }
+          else if (ttrec.bound == tt::Bound::UPPER) {
+            // min(beta, ttrec.val)
+            beta = (beta < ttrec.val) ? beta : ttrec.val;
+          }
+        }
+        break;
+      default:
+        break;
+    }
+    childMoves[nmoves] = ttrec.bestMove;
+    std::swap(childMoves[0], childMoves[nmoves]);
+    nmoves += 1;
+    std::sort(childMoves + 1, childMoves + nmoves, hl::keyCmp);
+  }
+  // We don't, but that's fine. We're done anyway.
+  else if (depth == 0) {
     evalsDone++;
     return {MMRet::NORMAL, evaluate(state)};
   }
-  std::vector<Move> childMoves = GetMoves(state);
-  if (ttrec.val.tag != MMRet::ABORT) {
-    //printf("%d\n", ttrec.bestMoveIdx);
-    std::iter_swap(childMoves.begin(), childMoves.begin() + ttrec.bestMoveIdx);
+  // Okay we don't have a TT and we're not done yet. Just use HistTbl.
+  else {
+    std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
   }
-  std::sort(childMoves.begin() + 1, childMoves.end(), hl::keyCmp);
+
   MMRet value = {MMRet::ABORT};
-  int idx = 0;
+  MMRet oldAlpha = alpha;
   int bestIdx = -1;
-  if (childMoves.size() == 0) {
+  if (nmoves == 0) {
     std::cerr << "WARN: Umm this shouldn't be possible! Err: 012938";
   }
-  for (const Move move : childMoves) {
+  for (int idx = 0; idx < nmoves; ++idx) {
+    Move move = childMoves[idx];
     GameState newState = state->ApplyMove(move).Invert();
-    MMRet nm = negamax(&newState, depth-1, -beta, -alpha).InvertOut();
+    MMRet nm = negamax(&newState, depth-1, moveBufBase + nmoves,
+                       beta.InvertIn(), alpha.InvertIn()).InvertOut();
     switch (nm.tag) {
       case MMRet::ABORT:
         return nm;
 
       default:
         if (nm > value) {
+          hl::incrementTable(move, idx);
           value = nm;
           bestIdx = idx;
         }
         alpha = (alpha > value) ? alpha : value;
         if (alpha > beta || alpha == beta) {
-          hl::incrementTable(move, 300);
-          tt::setValue(state, {value, depth, idx});
-          return value;
+          hl::incrementTable(move, 200);
+          goto done;
         }
     }
-    idx += 1;
   }
+done:
   if (value.tag != MMRet::ABORT) {
     hl::incrementTable(childMoves[bestIdx], 1);
-    tt::setValue(state, {value, depth, bestIdx});
+    tt::Bound bound = tt::Bound::EXACT;
+    if (value < oldAlpha || value == oldAlpha) {
+      bound = tt::Bound::UPPER;
+    }
+    if (value > beta || value == beta) {
+      bound = tt::Bound::LOWER;
+    }
+    tt::setValue(state, {value, depth, childMoves[bestIdx], bound});
   }
   return value;
 }

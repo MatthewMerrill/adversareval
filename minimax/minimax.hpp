@@ -54,6 +54,31 @@ struct MMRet {
     return {MMRet::ABORT};
   }
 
+  MMRet InvertIn() {
+    MMRet ret;
+    switch (tag) {
+      case MMRet::NORMAL:
+        ret.tag = MMRet::NORMAL;
+        ret.eval = -eval;
+        break;
+
+      case MMRet::WIN:
+        ret.tag = MMRet::LOSE;
+        ret.depth = depth-1;
+        break;
+
+      case MMRet::LOSE:
+        ret.tag = MMRet::WIN;
+        ret.depth = depth-1;
+        break;
+
+      case MMRet::ABORT:
+        ret.tag = MMRet::ABORT;
+        break;
+    }
+    return ret;
+  }
+
   MMRet InvertOut() {
     MMRet ret;
     switch (tag) {

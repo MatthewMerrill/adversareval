@@ -9,7 +9,7 @@
 #include "bitscan.hpp"
 
 #define U64 unsigned long long
-#define MOVE_ARR_LEN 32
+#define MOVE_ARR_LEN 48
 
 static U64 FULL_BOARD = (1ULL << 56) - 1;
 static U64 FlipVert(U64 state) {
@@ -27,46 +27,56 @@ static U64 FlipVert(U64 state) {
 
 struct Move {
 
-  U64 from;
-  U64 to;
+  char fromIdx = -1;
+  char toIdx = -1;
 
-  Move(): from(0), to(0) {}
+  Move(): fromIdx(-1), toIdx(-1) {}
 
   Move(int fr, int fc, int tr, int tc) {
-    from = 1ULL << (fr*7 + fc);
-    to = 1ULL << (tr*7 + tc);
+    fromIdx = (fr*7 + fc);
+    toIdx = (tr*7 + tc);
   }
 
-  Move(U64 f, U64 t): from(f), to(t) {
+  Move(char f, char t): fromIdx(f), toIdx(t) {
 #ifndef UNSAFE_MODE
-    if (f > (1ULL << 55) || t > (1ULL << 55) || (f & (f-1)) != 0 || (t & (t-1)) != 0) {
-      printf("INVALID MOVE! f:%llx t:%llx\n", f, t);
+    if (f > 55 || t > 55) {
+      printf("INVALID MOVE! f:%d t:%d\n", f, t);
     }
 #endif
   }
 
-  int FromRow() const {
-    return (bitscanll(from)-1) / 7;
+  inline int FromRow() const {
+    return fromIdx / 7;
   }
-  int FromCol() const {
-    return (bitscanll(from)-1) % 7;
+  inline int FromCol() const {
+    return fromIdx % 7;
   }
-
-  int ToRow() const {
-    return (bitscanll(to)-1) / 7;
-  }
-  int ToCol() const {
-    return (bitscanll(to)-1) % 7;
+  inline U64 FromBit() const {
+    return 1ULL << fromIdx;
   }
 
-  void Print() const {
+  inline int ToRow() const {
+    return toIdx / 7;
+  }
+  inline int ToCol() const {
+    return toIdx % 7;
+  }
+  inline U64 ToBit() const {
+    return 1ULL << toIdx;
+  }
+
+  inline void Print() const {
     printf("%c%c%c%c",
         FromCol() + 'A', FromRow() + '1',
         ToCol() + 'A', ToRow() + '1');
   }
 
-  Move Invert() const {
+  inline Move Invert() const {
     return Move(7 - FromRow(), FromCol(), 7 - ToRow(), ToCol());
+  }
+
+  inline bool operator==(Move move) {
+    return fromIdx == move.fromIdx && toIdx == move.toIdx;
   }
 };
 
@@ -75,18 +85,77 @@ struct GameState;
 extern GameState* testRoot;
 extern unsigned long long testSeed;
 
+U64 HashCode(const GameState* state);
+U64 HashCode(const GameState* old, Move move);
+
 struct GameState {
   
-  U64 pieces;
-  U64 teams;
-  U64 cars;
-  U64 knights;
-  U64 bishops;
-  U64 rooks;
-  U64 pawns;
+  GameState const* prev = NULL;
+  Move moveToHere;
+  union {
+    U64 bitBoards[7];
+    struct {
+      U64 pieces;
+      U64 teams;
+      union {
+        U64 typeBoards[5];
+        struct {
+          U64 cars;
+          U64 knights;
+          U64 bishops;
+          U64 rooks;
+          U64 pawns;
+        };
+      };
+    };
+  };
+  U64 hashCode;
 #ifndef UNSAFE_MODE
   bool valid = true;
 #endif
+
+#define ApplyLMoveToBoard(board, fromBit, diff) \
+  (board & ~(fromBit|toBit)) | ((board & fromBit) << diff)
+#define ApplyRMoveToBoard(board, fromBit, diff) \
+  (board & ~(fromBit|toBit)) | ((board & fromBit) >> diff)
+
+  GameState(const GameState* state, Move move) {
+    prev = state;
+    moveToHere = move;
+    U64 fromBit = 1ULL << move.fromIdx;
+    U64 toBit = 1ULL << move.toIdx;
+    pieces = (state->pieces & ~fromBit) | toBit;
+    if (move.toIdx >= move.fromIdx) {
+      int diff = move.toIdx - move.fromIdx;
+      teams = ApplyLMoveToBoard(state->teams, fromBit, diff);
+      cars = ApplyLMoveToBoard(state->cars, fromBit, diff);
+      knights = ApplyLMoveToBoard(state->knights, fromBit, diff);
+      bishops = ApplyLMoveToBoard(state->bishops, fromBit, diff);
+      rooks = ApplyLMoveToBoard(state->rooks, fromBit, diff);
+      pawns = ApplyLMoveToBoard(state->pawns, fromBit, diff);
+    }
+    else {
+      int diff = move.fromIdx - move.toIdx;
+      teams = ApplyRMoveToBoard(state->teams, fromBit, diff);
+      cars = ApplyRMoveToBoard(state->cars, fromBit, diff);
+      knights = ApplyRMoveToBoard(state->knights, fromBit, diff);
+      bishops = ApplyRMoveToBoard(state->bishops, fromBit, diff);
+      rooks = ApplyRMoveToBoard(state->rooks, fromBit, diff);
+      pawns = ApplyRMoveToBoard(state->pawns, fromBit, diff);
+    }
+#ifndef UNSAFE_MODE
+    if (pieces != (cars | knights | bishops | rooks | pawns)) {
+      std::cerr << "WARN! Pieces Board != BitwiseOR of piece boards!" << std::endl;
+      PrintComponents();
+      valid = false;
+    }
+    if (pieces >= (1ULL << 56)) {
+      std::cerr << "WARN! Pieces Off Board!" << std::endl;
+      valid = false;
+    }
+#endif
+    hashCode = HashCode(state, move);
+  }
 
   GameState():
     pieces(0x208ffbf67c101ULL),
@@ -107,10 +176,11 @@ struct GameState {
         valid = false;
       }
 #endif
+      hashCode = HashCode(this);
     }
 
-  GameState(U64 pc, U64 t, U64 c, U64 k, U64 b, U64 r, U64 p)
-    : pieces(pc), teams(t), cars(c), knights(k), bishops(b), rooks(r), pawns(p) {
+  GameState(U64 pc, U64 t, U64 c, U64 k, U64 b, U64 r, U64 p, U64 hc)
+    : pieces(pc), teams(t), cars(c), knights(k), bishops(b), rooks(r), pawns(p), hashCode(hc) {
 #ifndef UNSAFE_MODE
       if (pieces != (cars | knights | bishops | rooks | pawns)) {
         std::cerr << "WARN! Pieces Board != BitwiseOR of piece boards!" << std::endl;
@@ -138,18 +208,19 @@ struct GameState {
       valid = false;
     }
 #endif
+    hashCode = HashCode(this);
   }
 
-  void Serialize(char* s) const {
+  inline void Serialize(char* s) const {
     sprintf(s, "%llx %llx %llx %llx %llx %llx %llx",
         pieces, teams, cars, knights, bishops, rooks, pawns);
   }
 
-  void Print() const {
+  inline void Print() const {
     PrintHighlighting(NULL);
   }
 
-  void PrintHighlighting(Move* move) const {
+  inline void PrintHighlighting(Move* move) const {
     std::cout << "   --------------------- ";
     textfg(RED);
     std::cout << "Computer";
@@ -184,7 +255,7 @@ struct GameState {
     std::cout << std::endl << "    A  B  C  D  E  F  G" << std::endl << std::endl;
   }
 
-  void PrintChar(int r, int c) const {
+  inline void PrintChar(int r, int c) const {
     U64 bit = 1ULL << (r * 7 + c);
     if (cars & bit) {
       std::cout << ((teams & bit) ? "_C_" : ".C.");
@@ -206,38 +277,34 @@ struct GameState {
     }
   }
 
-  #define ApplyMoveToPieceBoard(board) \
-    ((((board) & ~toBit & ~fromBit) | (((board) & fromBit) ? toBit : 0)))
-
-  GameState ApplyMove(Move move) const {
-    U64 fromBit = move.from;
-    U64 toBit = move.to;
-    GameState next = GameState(
-      ((this->pieces & ~fromBit) | toBit),
-      ApplyMoveToPieceBoard(this->teams),
-      ApplyMoveToPieceBoard(this->cars),
-      ApplyMoveToPieceBoard(this->knights),
-      ApplyMoveToPieceBoard(this->bishops),
-      ApplyMoveToPieceBoard(this->rooks),
-      ApplyMoveToPieceBoard(this->pawns)
-    );
+  inline GameState ApplyMove(Move move) const {
+    GameState next = GameState(this, move);
 #ifndef UNSAFE_MODE
     if (!next.valid) {
       char dbg[128];
-      printf("There's a bug 'round these parts! Tried to apply: ");
+      printf("There's a bug 'round these parts! Last move: ");
       move.Print();
+      printf("{%d, %d}\n", move.fromIdx, move.toIdx);
+      
+      GameState const* cur = this;
+      while (cur != NULL) {
+        printf("From: ");
+        if (cur->moveToHere.fromIdx == -1) {
+          printf("INVERT\n");
+        }
+        else {
+          cur->moveToHere.Print();
+          printf("{%d, %d}\n", cur->moveToHere.fromIdx, cur->moveToHere.toIdx);
+        }
+        cur->Print();
+        cur = cur->prev;
+      }
       if (testRoot != NULL) {
         printf("\nfrom seed: %llu\nfrom initial state:\n", testSeed);
         testRoot->Print();
         testRoot->Serialize(dbg);
-        printf("%s", dbg);
+        printf("%s\n", dbg);
       }
-      Print();
-      Serialize(dbg);
-      printf("%s", dbg);
-      next.Print();
-      next.Serialize(dbg);
-      printf("%s", dbg);
       exit(1);
     }
 #endif
@@ -280,15 +347,18 @@ struct GameState {
   }
 
   GameState Invert() const {
-    return GameState(
+    GameState ret = GameState(
       FlipVert(this->pieces),
       (~FlipVert(this->teams)) & FlipVert(this->pieces),
       FlipVert(this->cars),
       FlipVert(this->knights),
       FlipVert(this->bishops),
       FlipVert(this->rooks),
-      FlipVert(this->pawns)
+      FlipVert(this->pawns),
+      ~hashCode
     );
+    ret.prev = this;
+    return ret;
   }
 
   bool operator==(const GameState &other) const {
@@ -301,18 +371,5 @@ struct GameState {
       && pawns == other.pawns;
   } 
 };
-namespace std {
-  template <> struct hash<GameState> {
-    std::size_t operator()(const GameState& s) const noexcept {
-      return s.pieces
-        ^ s.teams
-        ^ s.cars
-        ^ s.knights
-        ^ s.bishops
-        ^ s.rooks
-        ^ s.pawns;  
-    }
-  };
-}
 #endif
 

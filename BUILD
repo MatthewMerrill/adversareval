@@ -51,20 +51,51 @@ cc_binary(
         "ansi/**/*.hpp",
         "transpositiontables/**/*.cpp",
         "transpositiontables/**/*.hpp",
-    ]),
+    ], exclude=["hotwheels/evaluate_nn.cpp"]),
   linkopts = ["-pthread"],
   copts = [
       "-Ihotwheels",
       "-Iminimax",
       "-Itranspositiontables",
       "-Iansi",
-      "-std=c++11"
+      "-std=c++17"
+      ],
+)
+
+cc_binary(
+  name = "hotwheels_nn",
+  srcs =
+    glob([
+        "hotwheels/**/*.cpp",
+        "hotwheels/**/*.hpp",
+        "minimax/**/*.cpp",
+        "minimax/**/*.hpp",
+        "ansi/**/*.cpp",
+        "ansi/**/*.hpp",
+        "transpositiontables/**/*.cpp",
+        "transpositiontables/**/*.hpp",
+        "nn/**/*.cpp",
+        "nn/**/*.hpp",
+    ], exclude=["hotwheels/evaluate.cpp"]),
+  linkopts = ["-pthread"],
+  data = glob(["models/**/*.pb", "models/**/*.json"]),
+  deps = ["@frugallydeep//:frugallydeep"],
+  copts = [
+      "-Ihotwheels",
+      "-Iminimax",
+      "-Itranspositiontables",
+      "-Iansi",
+      "-Inn",
+      #"-Iexternal/frugallydeep/include",
+      "-std=c++14",
+      "-D NN_EVAL"
       ],
 )
 
 cc_binary(
   name = "nn",
   srcs = ["nn/nn.c"],
+  data = glob(["models/**/*.pb"]),
   deps = ["@libtensorflow//:libtensorflow"],
   copts = ["-Iexternal/libtensorflow/include"],
 )
@@ -89,7 +120,7 @@ cc_test(
         "transpositiontables/**/*.cpp",
         "transpositiontables/**/*.hpp",
         "test/transpositiontables/**/*_test.cpp",
-    ], exclude=["hotwheels/main.cpp"]),
+    ], exclude=["hotwheels/main.cpp", "hotwheels/evaluate_nn.cpp"]),
   copts = [
       "-Ihotwheels",
       "-Iminimax",

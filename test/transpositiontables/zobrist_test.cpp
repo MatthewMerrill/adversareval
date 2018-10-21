@@ -11,7 +11,7 @@
 TEST(TestZobrist, NullSeed) {
   unsigned long long keys[4][4];
   unsigned long long* keysPtrs[] = { keys[0], keys[1], keys[2], keys[3] };
-  generateZobristKeysFromSeed((unsigned long long**) keysPtrs, 4, 4, 0);
+  tt::generateZobristKeysFromSeed((unsigned long long**) keysPtrs, 4, 4, 0);
 
   unsigned long long expected[4][4] = { 
     {4506900286868959208ULL, 7356933424542005313ULL, 17530672337659192010ULL, 3183792233013426327ULL },
@@ -31,11 +31,10 @@ TEST(TestZobrist, NullSeed) {
 
 TEST(TestTable, BasicMap) {
   GameState state;
-  tt::setValue(&state, {{MMRet::WIN}, 16, 12});
+  tt::setValue(&state, {{MMRet::WIN}, 16});
   MMRet exp = {MMRet::WIN};
   MMRet act = tt::getValue(&state).val;
   EXPECT_EQ(exp, act);
   EXPECT_EQ(16, tt::getValue(&state).depth);
-  EXPECT_EQ(12, tt::getValue(&state).bestMoveIdx);
 }
 

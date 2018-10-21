@@ -10,6 +10,12 @@
 #include "game.hpp"
 #include "minimax.hpp"
 #include "movegen.hpp"
+#include "transpositiontbl.hpp"
+#include "zobrist.hpp"
+
+#ifdef NN_EVAL
+#include "nn.hpp"
+#endif
 
 #include "ui.hpp"
 
@@ -25,22 +31,61 @@ void disableAltScreen() {
   //std::cout << "\x1B[?1049lThank you for playing!" << std::endl;
 }
 
+int humanVsHuman();
+int humanVsComputer();
+int computerVsComputer();
+
 int main() {
+
 // https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
 #ifdef _WIN32
   // Set output mode to handle virtual terminal sequences
   HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+#ifdef CHECK_HANDLE
+  /*
   if (hOut == INVALID_HANDLE_VALUE) {
     return GetLastError();
-  }
+  }*/
+#endif
   DWORD dwMode = 0;
   if (!GetConsoleMode(hOut, &dwMode)) {
+#ifdef CHECK_HANDLE
+    /*
     return GetLastError();
+    */
+#endif
   }
   dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
   if (!SetConsoleMode(hOut, dwMode)) {
+#ifdef CHECK_HANDLE
+    /*
     return GetLastError();
+    */
+#endif
   }
+#endif
+
+  ui::displayAll();
+  int mode;
+  std::cout << "What mode are you playing in?" << std::endl
+    << " 1 - Human Vs Human" << std::endl
+    << " 2 - Human Vs Computer" << std::endl
+    << " 3 - Computer Vs Computer" << std::endl;
+  std::cin >> mode;
+  switch (mode) {
+    //case 0: return humanVsHuman();
+    case 2: return humanVsComputer();
+    case 3: return computerVsComputer();
+    default:
+      std::cout << "Unknown mode!" << std::endl;
+      return 1;
+  }
+}
+ 
+int humanVsComputer() {
+  tt::init();
+#ifdef NN_EVAL
+  nn::loadGraph();
 #endif
   ui::displayAll();
 
@@ -52,7 +97,7 @@ int main() {
   ui::displayAll();
 
   textattr(28);
-  std::cout << std::endl << std::endl << "Are you going first (0)? or am I (1)? 0/1: ";
+  std::cout << "Are you going first (0)? or am I (1)? 0/1: ";
   std::cin >> turn;
 
   if (turn != 0 && turn != 1) {
@@ -61,6 +106,7 @@ int main() {
   }
 
   char input[4];
+  Move moves[MOVE_ARR_LEN];
   Move move;
   int winner;
 
@@ -101,17 +147,19 @@ int main() {
     } else {
       ui::displayAll();
       std::cout << "Moves available: " << std::endl << "[";
-      std::vector<Move> moves = GetMoves(&state);
-      for (size_t i = 0; i < moves.size(); ++i) {
+      int nmoves = GetMoves(&state, moves);
+      for (int i = 0; i < nmoves; ++i) {
         if (i % 11 == 0) {
           std::cout << std::endl;
         }
         std::cout << "  ";
-        moves.at(i).Print();
+        moves[i].Print();
         std::cout << ",";
       }
       std::cout << std::endl << "]" << std::endl;
-
+      std::cout << "Please wait while I clean house... " << std::endl;
+      tt::cleanup(&state);
+      std::cout << "all clean!" << std::endl;
       for (;;) {
         std::cout << "Where would you like to move?" << std::endl;
         std::cin >> input;
@@ -132,6 +180,86 @@ int main() {
     }
     turn ^= 1;
   }
+#ifdef NN_EVAL
+  nn::unloadGraph();
+#endif
 
   return 0;
 }
+
+int computerVsComputer() {
+  tt::init();
+#ifdef NN_EVAL
+  nn::loadGraph();
+#endif
+  ui::displayAll();
+
+  enableAltScreen();
+  atexit(disableAltScreen);
+
+  GameState state;
+  int turn;
+
+  textattr(28);
+  Move move;
+  int winner;
+  int wins = 0;
+
+  for (int gameIdx = 0; gameIdx < 20; ++gameIdx) {
+    state = GameState();
+    turn = 0;
+    ui::displayAll();
+    ui::historyVector.clear();
+    tt::clear();
+    for (;;) {
+      winner = state.GetWinner();
+      if (winner) {
+        ui::displayAll();
+        std::cout << "Computer 0 has won " << wins << "/" << gameIdx << " games. " << std::endl;
+        std::cout << "We have a winner!" << std::endl;
+        if (winner == -1) {
+          wins++;
+        }
+        break;
+      }
+      if (!turn) {
+        ui::displayAll();
+        std::cout << "Computer 0 has won " << wins << "/" << gameIdx << " games. " << std::endl;
+        std::cout << "Computer 0 is thinking... " << std::endl;
+        move = MyBestMove(&state);
+        ui::prevState = state;
+        state = state.ApplyMove(move);
+        ui::curState = state;
+        ui::historyVector.push_back(move);
+        std::cout << "Computer 0 moving to: ";
+        move.Print();
+        std::cout << " (";
+        move.Invert().Print();
+        std::cout << ")";
+      } else {
+        ui::displayAll();
+        std::cout << "Computer 0 has won " << wins << "/" << gameIdx << " games. " << std::endl;
+        std::cout << "Computer 1 is thinking... " << std::endl;
+        GameState inv = state.Invert();
+        move = MyBestMove(&inv).Invert();
+        ui::prevState = state;
+        state = state.ApplyMove(move);
+        ui::curState = state;
+        ui::historyVector.push_back(move);
+        std::cout << "Computer 1 moving to: ";
+        move.Print();
+        std::cout << " (";
+        move.Invert().Print();
+        std::cout << ")";
+      }
+      //if (ui::historyVector.size() % 8 == 7) {
+        std::cout << std::endl << "Please wait while I clean house... " << std::endl;
+        tt::cleanup(&state);
+        std::cout << "all clean!" << std::endl;
+      //}
+      turn ^= 1;
+    }
+  }
+  return 0;
+}
+

@@ -114,7 +114,7 @@ namespace ui {
     printHeader(hotwheelschess, 3 * 15, RED + 30, YELLOW + 30, boxchar, 80);
     printf("%s\n", spaces);
     printf("%47.47s+%32.32s\n", dashes, dashes);
-    uint historyBase = historyVector.size() > 33 ? historyVector.size() - 33 : 0;
+    unsigned int historyBase = historyVector.size() > 33 ? historyVector.size() - 33 : 0;
     for (int row = 0; row < 13; ++row) {
       switch (row) {
         case 0:
@@ -171,7 +171,7 @@ namespace ui {
   }
 }
 
-#ifdef __WIN32
+#ifdef _WIN32
 unsigned char adversareval_googly_txt[] = {
   0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e,
   0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x2e, 0x20, 0x20, 0x20, 0x1b, 0x5b,

@@ -1,31 +1,37 @@
 #include <unordered_map>
 #include <iostream>
+#include <stdio.h>
+#include <vector>
 
+#include "bitscan.hpp"
 #include "transpositiontbl.hpp"
 
 namespace tt {
+  pair<U64, TTRec> bufs[27][1ULL << 20];
+  /*
   std::unordered_map<GameState, TTRec> tbl = {};
 
-  void clear() {
-    tbl.clear();
+  inline static int countPieces(const GameState* state) {
+    return popcount(state->pieces);
   }
-  void setValue(const GameState* state, TTRec rec) {
-    if (rec.val.tag != MMRet::ABORT
-        && (tbl.find(*state) == tbl.end()
-          || rec.depth > tbl[*state].depth)) {
-      tbl[*state] = rec;
+  void cleanup(const GameState* state) {
+    unsigned int numPieces = popcount(state->pieces);
+    std::vector<const GameState*> rm;
+    for (auto& rec: tbl) {
+      if (popcount(rec.first.pieces) > numPieces) {
+        rm.push_back(&rec.first);
+      }
+      if (rm.size() > 100000000ULL) {
+        printf("That's a lot of cleaning!");
+        break;
+      }
     }
+    std::cout << "Cleaning %lu elems..." << rm.size();
+    for (auto& s : rm) {
+      tbl.erase(*s);
+    }
+    tbl.rehash(0);
   }
-  bool hasValue(const GameState* state) {
-    return tbl.find(*state) != tbl.end()
-      && tbl[*state].val.tag != MMRet::ABORT;
-  }
-  TTRec getValue(const GameState* state) {
-    //std::cout << "{";
-    //for (auto const& pair: tbl) {
-    //  std::cout << "{" << pair.first.pieces << ": " << pair.second.depth << "},";
-    //}
-    //std::cout << "}" << std::endl;
-    return tbl[*state];
-  }
+  */
 }
+

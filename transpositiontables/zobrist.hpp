@@ -6,29 +6,32 @@
 
 #include <random>
 
-// https://stackoverflow.com/a/18726221/3188059
-void generateZobristKeysFromSeed(
-  unsigned long long** keys,
-  int ntypes, int ntiles, int seed) {
-  
-  std::mt19937_64 mtRand{ (unsigned long long) seed };
-  
-  for (int itype = 0; itype < ntypes; ++itype) {
-    for (int itile = 0; itile < ntiles; ++itile) {
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
-      keys[itype][itile] = (keys[itype][itile] << 8) | (mtRand() & 255);
+#include <game.hpp>
+
+namespace tt {
+
+  extern U64 ZOBRIST_KEYS[];
+
+  // https://stackoverflow.com/a/18726221/3188059
+  static inline void generateZobristKeysFromSeed(U64* keys, int n, int seed) {
+    std::mt19937_64 mtRand{ (U64) seed };
+    for (int i = 0; i < n; ++i) {
+      keys[i] = (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
+      keys[i] = (keys[i] << 8) | (mtRand() & 255);
     }
   }
-}
-void generateZobristKeys(unsigned long long** keys, int ntypes, int ntiles) {
-  std::random_device r;
-  generateZobristKeysFromSeed(keys, ntypes, ntiles, r());
+  static inline void generateZobristKeys(U64* keys, int ntypes, int ntiles) {
+    std::random_device r;
+    generateZobristKeysFromSeed(keys, ntypes * ntiles, r());
+  }
+
+  U64 hash(const GameState* state);
 }
 
 #endif
