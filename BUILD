@@ -58,7 +58,7 @@ cc_binary(
       "-Iminimax",
       "-Itranspositiontables",
       "-Iansi",
-      "-std=c++17"
+      "-std=c++11",
       ],
 )
 

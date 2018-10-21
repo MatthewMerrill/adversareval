@@ -5,8 +5,8 @@ namespace tt {
 
   U64 hash(const GameState* state) {
     int idx;
-    U64 hash;
-    for (int i = 1; i < 7; ++i) {
+    U64 hash = 0;
+    for (int i = 0; i < 7; ++i) {
       U64 board = state->bitBoards[i];
       while ((idx = bitscanll(board))) {
         hash ^= ZOBRIST_KEYS[i * 56 + (idx-1)];

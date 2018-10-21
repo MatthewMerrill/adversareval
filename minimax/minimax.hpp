@@ -2,6 +2,7 @@
 #define MINIMAX_H
 
 #include <cassert>
+#include <utility>
 
 #include "game.hpp"
 #include "evaluate.hpp"
@@ -35,23 +36,23 @@ struct MMRet {
   MMRet operator -() const {
     switch(tag) {
       case MMRet::NORMAL:
-        return {MMRet::NORMAL, -eval};
+        return MMRet{MMRet::NORMAL, -eval};
       case MMRet::WIN: {
-        MMRet ret = {MMRet::LOSE};
+        MMRet ret = MMRet{MMRet::LOSE};
         ret.depth = depth;
         return ret;
       }
       case MMRet::LOSE: {
-        MMRet ret = {MMRet::WIN};
+        MMRet ret = MMRet{MMRet::WIN};
         ret.depth = depth;
         return ret;
       }
       case MMRet::ABORT:
         assert(false && "No ABORTs in - op!");
-        return {MMRet::ABORT};
+        return MMRet{MMRet::ABORT};
     }
     assert(false && "IDK this tag!" && tag);
-    return {MMRet::ABORT};
+    return MMRet{MMRet::ABORT};
   }
 
   MMRet InvertIn() {
@@ -107,7 +108,7 @@ struct MMRet {
 
 
 Move MyBestMove(const GameState* state);
-Move MyBestMoveAtDepth(const GameState* state, int depth);
+std::pair<Move, MMRet> MyBestMoveAtDepth(const GameState* state, int depth);
 
 #endif
 

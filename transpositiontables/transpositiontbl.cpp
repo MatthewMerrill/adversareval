@@ -7,8 +7,9 @@
 #include "transpositiontbl.hpp"
 
 namespace tt {
-  pair<U64, TTRec> bufs[27][1ULL << 20];
   /*
+  pair<U64, TTRec> bufs[27][1ULL << 20];
+  /*/
   std::unordered_map<GameState, TTRec> tbl = {};
 
   inline static int countPieces(const GameState* state) {
@@ -26,12 +27,12 @@ namespace tt {
         break;
       }
     }
-    std::cout << "Cleaning %lu elems..." << rm.size();
+    printf("Cleaning %llu elems...", rm.size());
     for (auto& s : rm) {
       tbl.erase(*s);
     }
-    tbl.rehash(0);
+    //tbl.rehash(0);
   }
-  */
+  //*/
 }
 

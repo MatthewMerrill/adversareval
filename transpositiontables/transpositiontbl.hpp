@@ -23,30 +23,30 @@ namespace tt {
   struct TTRec {
     MMRet val;
     int depth;
-    Move bestMove;
+    int bestMoveIdx;
     Bound bound;
   };
-
+/*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
   extern pair<U64, TTRec> bufs[27][1ULL << 20];
   static U64 MOD_MASK = (1ULL << 20) - 1;
 
   static inline void init() {
-    /*
     for (int pc = 0; pc < 25; ++pc) {
       // Let each piece-count buffer hold 2^30 values
-      bufs[pc].reserve(1ULL << 25);
+      //bufs[pc] = (pair<U64, TTRec>*) malloc((MOD_MASK + 1) * sizeof(pair<U64, TTRec>));
     }
-    */
   }
 
   static inline void setValue(const GameState* state, TTRec rec) {
     int pieceCount = popcount(state->pieces);
-    const auto optPair = bufs[pieceCount][state->hashCode & MOD_MASK];
-    if (optPair.first != 0 && optPair.second.depth > rec.depth) {
-      return; // Already something better there.
+    if (rec.val.tag != MMRet::ABORT) {
+      const auto optPair = bufs[pieceCount][state->hashCode & MOD_MASK];
+      if (optPair.first != 0 && optPair.second.depth > rec.depth) {
+        return; // Already something better there.
+      }
+      bufs[pieceCount][state->hashCode & MOD_MASK] = std::make_pair(state->hashCode, rec);
     }
-    bufs[pieceCount][state->hashCode & MOD_MASK] = std::make_pair(state->hashCode, rec);
   }
 
   static inline pair<U64, TTRec> getValue(const GameState* state) {
@@ -65,11 +65,15 @@ namespace tt {
 }
 
 
-  /*
-  //extern std::unordered_map<GameState, TTRec> tbl;
+  /*/
+  extern std::unordered_map<GameState, TTRec> tbl;
 
   static inline void clear() {
     tbl.clear();
+  }
+
+  static inline void init() {
+    tbl.reserve(2800ULL);
   }
 
   void cleanup(const GameState* state);
@@ -85,10 +89,10 @@ namespace tt {
     return tbl.find(*state) != tbl.end()
       && tbl[*state].val.tag != MMRet::ABORT;
   }
-  static inline TTRec getValue(const GameState* state) {
-    return &tbl[*state];
+  static inline pair<U64, TTRec> getValue(const GameState* state) {
+    return hasValue(state) ? std::make_pair(state->hashCode, tbl[*state]) : std::make_pair(0ULL, TTRec{MMRet::ABORT});
   }
 }
-*/
+//*/
 #endif
 

@@ -113,7 +113,7 @@ int AppendMoves(U64 bit, U64 moves, Move* ls) {
       bit <<= 1;
     }
   }//*/
-  char fromIdx = bitscanll(bit) - 1;
+  char fromIdx = (char) bitscanll(bit) - 1;
   int inserted = 0;
   int idx; 
   while ((idx = bitscanll(moves))) {

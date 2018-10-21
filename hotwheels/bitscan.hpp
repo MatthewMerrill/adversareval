@@ -14,7 +14,7 @@ static inline unsigned int popcount(unsigned long long l) {
 static inline unsigned long bitscanll(unsigned __int64 l) {
   unsigned long idx;
   if (_BitScanForward64(&idx, l)) {
-    return idx + 1;
+    return (unsigned long) (idx + 1);
   }
   else {
     return 0;
@@ -22,7 +22,7 @@ static inline unsigned long bitscanll(unsigned __int64 l) {
 }
 
 static inline unsigned int popcount(unsigned __int64 l) {
-  return (unsigned int) __popcnt(l);
+  return (unsigned int) __popcnt64(l);
 }
 
 #else

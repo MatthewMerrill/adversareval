@@ -6,11 +6,11 @@
 
 namespace hl {
 
-extern int historyTable[56 * 56];
+extern signed long long historyTable[56 * 56];
 
 static inline bool keyCmp(const Move a, const Move b) {
-  int av = historyTable[56 * a.fromIdx + a.toIdx];
-  int bv = historyTable[56 * b.fromIdx + b.toIdx];
+  signed long long av = historyTable[56 * a.fromIdx + a.toIdx];
+  signed long long bv = historyTable[56 * b.fromIdx + b.toIdx];
   return av > bv;
 }
 

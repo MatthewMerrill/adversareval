@@ -39,36 +39,57 @@ Move MyBestMove(const GameState* state) {
   start = time(NULL); 
   while (depth < 30 && time(NULL) - start < MINIMAX_TIME_CUTOFF) {
     evalsDone = 0;
-    Move m = MyBestMoveAtDepth(state, depth);
-    if (m.fromIdx == -1) {
+    const auto p = MyBestMoveAtDepth(state, depth);
+    if (p.second.tag == MMRet::ABORT) {
       printf("ABORT! Interrupted at depth %d\n", depth);
+      start = 0;
       break;
     }
-    std::cout << "Performed " << evalsDone << " evals at depth "
-      << depth << "." << std::endl;
-    best = m;
-    ++depth;
+
+    printf("Performed %9llu evals at depth %2d. Best is now: ", evalsDone, depth);
+    best = p.first;
+    best.Print();
+    std::cout << ".";
+    switch (p.second.tag) {
+      case MMRet::WIN:
+        printf("\nThis is going to be very painful......       for you!.\n");
+        start = 0;
+        std::cout << std::flush;
+        return best;
+
+      case MMRet::LOSE:
+        printf("\nThis is going to be very painful......\n");
+        start = 0;
+        std::cout << std::flush;
+        return best;
+
+      default:
+        printf(" Evaluated at: %7.0f.\n", p.second.eval);
+        ++depth;
+        break;
+    }
+    std::cout << std::flush;
   }
   start = 0;
   return best;
 }
 
-Move MyBestMoveAtDepth(const GameState* state, int depth) {
+pair<Move, MMRet> MyBestMoveAtDepth(const GameState* state, int depth) {
   MMRet value = {MMRet::ABORT};
   Move* childMoves = (Move*) &moveBuf;
   int nmoves = GetMoves(state, childMoves);
   Move best;
   if (nmoves == 1) {
-    return childMoves[0];
+    return std::make_pair(childMoves[0], MMRet{MMRet::NORMAL});
   }
   int numEq = 0;
   for (int moveIdx = 0; moveIdx < nmoves; ++moveIdx) {
     Move move = childMoves[moveIdx];
     GameState newState = state->ApplyMove(move).Invert();
-    MMRet nm = negamax(&newState, depth-1, nmoves, {MMRet::LOSE}, {MMRet::WIN}).InvertOut();
+    MMRet nm = negamax(&newState, depth-1, nmoves, MMRet{MMRet::LOSE}, MMRet{MMRet::WIN}).InvertOut();
     switch (nm.tag) {
       case MMRet::ABORT:
-        return Move();
+        return std::make_pair(Move(), nm);
 
       default:
         if (nm > value) {
@@ -84,7 +105,7 @@ Move MyBestMoveAtDepth(const GameState* state, int depth) {
         break;
     }
   }
-  return best;
+  return std::make_pair(best, value);
 }
 
 using tt::TTRec;
@@ -95,7 +116,7 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
               MMRet alpha, MMRet beta) {
   int winner = state->GetWinner();
   if (winner == 1) {
-    MMRet ret = {MMRet::WIN};
+    MMRet ret = MMRet{MMRet::WIN};
     ret.depth = depth;
     return ret;
   }
@@ -143,10 +164,16 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
       default:
         break;
     }
-    childMoves[nmoves] = ttrec.bestMove;
-    std::swap(childMoves[0], childMoves[nmoves]);
-    nmoves += 1;
-    std::sort(childMoves + 1, childMoves + nmoves, hl::keyCmp);
+    if (ttrec.bestMoveIdx < nmoves) {
+      std::swap(childMoves[0], childMoves[ttrec.bestMoveIdx]);
+      std::sort(childMoves + 1, childMoves + nmoves, hl::keyCmp);
+    }
+    else {
+      printf("Hmm ttrec has an invalid move idx?\n");
+      std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
+    }
+    
+    //std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
   }
   // We don't, but that's fine. We're done anyway.
   else if (depth == 0) {
@@ -181,14 +208,27 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
         }
         alpha = (alpha > value) ? alpha : value;
         if (alpha > beta || alpha == beta) {
-          hl::incrementTable(move, 200);
+          hl::incrementTable(move, 20000);
           goto done;
         }
     }
   }
 done:
   if (value.tag != MMRet::ABORT) {
-    hl::incrementTable(childMoves[bestIdx], 1);
+    switch (value.tag) {
+      case MMRet::WIN:
+        hl::incrementTable(childMoves[bestIdx], 1000000);
+        break;
+      case MMRet::LOSE:
+        hl::incrementTable(childMoves[bestIdx], -1000000);
+        break;
+      case MMRet::NORMAL:
+        hl::incrementTable(childMoves[bestIdx], (int) (1000 * value.eval));
+        break;
+      default:
+        hl::incrementTable(childMoves[bestIdx], 100);
+        break;
+    }
     tt::Bound bound = tt::Bound::EXACT;
     if (value < oldAlpha || value == oldAlpha) {
       bound = tt::Bound::UPPER;
@@ -196,7 +236,7 @@ done:
     if (value > beta || value == beta) {
       bound = tt::Bound::LOWER;
     }
-    tt::setValue(state, {value, depth, childMoves[bestIdx], bound});
+    tt::setValue(state, {value, depth, bestIdx, bound});
   }
   return value;
 }
