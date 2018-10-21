@@ -109,7 +109,11 @@ namespace ui {
 #endif
   void displayAll() {
     printf("\x1B[1;1H\x1B[2J\x1B[1;1H%s\n%s\n", dashes, spaces);
+#ifndef NO_ANSI
     printf("%s", adversareval_googly_txt);
+#else
+    printHeader(adversarevalBlocks, 3*12, BLACK + 30, WHITE + 30, boxchar, 80);
+#endif
     printf("\n");
     printHeader(hotwheelschess, 3 * 15, RED + 30, YELLOW + 30, boxchar, 80);
     printf("%s\n", spaces);

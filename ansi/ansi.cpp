@@ -24,39 +24,53 @@ const int googleColors[] = { BLUE, RED, YELLOW, BLUE, GREEN, RED };
 // Copied from:
 // http://athena.csus.edu/~gordonvs/180/colorAnsi.html
 void textcolor(int attr, int fg, int bg) {
+#ifndef NO_ANSI
   char command[13];
   std::sprintf(command, "%c[%d;%d;%dm", 0x1B, attr, fg + 30, bg + 40);
   printf("%s", command);
+#endif
 }
 
 void textattr(int attr) {
+#ifndef NO_ANSI
   char command[13];
   std::sprintf(command, "%c[%dm", 0x1B, attr);
   printf("%s", command);
+#endif
 }
 
 void textfg(int fg) {
+#ifndef NO_ANSI
   char command[13];
   std::sprintf(command, "%c[%dm", 0x1B, fg + 30);
   printf("%s", command);
+#endif
 }
 
 void textfg_256(int color) {
+#ifndef NO_ANSI
   printf("%c[38;5;%dm", 0x1B, color);
+#endif
 }
 
 void textbg(int bg) {
+#ifndef NO_ANSI
   char command[13];
   std::sprintf(command, "%c[%dm", 0x1B, bg + 40);
   printf("%s", command);
+#endif
 }
 
 void textbg_256(int color) {
+#ifndef NO_ANSI
   printf("%c[48;5;%dm", 0x1B, color);
+#endif
 }
 
 void resettext() {
+#ifndef NO_ANSI
   printf("%c[0;;m", 0x1B);
+#endif
 }
 
 void printGooglyHeader(const char* text[], int len, const char* ch, int termWidth) {
