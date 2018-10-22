@@ -117,6 +117,17 @@ int humanVsComputer() {
     epoch += 1;
     winner = state.GetWinner();
     if (winner) {
+      if (turn) {
+        if (move.fromIdx > -1) {
+          std::cout << "I'm moving to: ";
+          move.Print();
+          std::cout << " (";
+          move.Invert().Print();
+          std::cout << ")";
+          std::cin.ignore();
+          std::cin.ignore();
+        }
+      }
       ui::displayAll();
       std::cout << "We have a winner!" << std::endl;
       if (winner == 1) {

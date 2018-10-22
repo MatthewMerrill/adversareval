@@ -20,27 +20,27 @@ signed short evaluate(const GameState* state) {
   while ((idx = bitscanll(pieces))) {
     bit = 1ULL << (idx-1);
     pieces ^= bit;
+
+    if ((myTrack & bit) && (bit > myCar)) {
+      eval -= 10;
+      eval -= ((idx - 1) % 7);
+      eval += ((8 - (myCarIdx - idx)) % 7);
+    }
+    else if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
+      eval += 10;
+      eval += ((idx - 1) % 7);
+      eval += ((8 - (theirCarIdx - idx)) % 7);
+    }
+
     if (state->teams & bit) {
-      if ((myTrack & bit) && (bit > myCar)) {
-        eval -= 10;
-      }
-      if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
-        eval += 25;
-      }
       if (state->cars & bit) {
-        eval -= 30 * ((idx - 1) % 7);
+        eval -= 20 * ((idx - 1) % 7);
       }
       eval -= 1;
     }
     else {
-      if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
-        eval += 10;
-      }
-      if ((myTrack & bit) && (bit > myCar)) {
-        eval -= 25;
-      }
       if (state->cars & bit) {
-        eval += 30 * ((idx - 1) % 7);
+        eval += 20 * ((idx - 1) % 7);
       }
       eval += 1;
     }

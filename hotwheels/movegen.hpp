@@ -175,6 +175,7 @@ static inline int GetMoves(const GameState* state, Move* moves) {
     }
     else {
       std::cerr << "Uh idk Err: 23434580" << std::endl;
+      exit(1);
     }
   }
   //std::cout << "CARCOL:" << carcol << std::endl;

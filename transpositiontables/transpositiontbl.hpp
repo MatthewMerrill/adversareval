@@ -23,18 +23,18 @@ namespace tt {
   struct TTRec {
     S16 val;
     signed char depth;
-    signed char bestMoveIdx;
+    Move bestMove;
     Bound bound;
 
     TTRec() {
       val = 20000;
       depth = 0;
-      bestMoveIdx = -1;
+      bestMove = Move();
       bound = Bound::EXACT;
     }
 
-    TTRec(S16 v, signed char d, signed char bmi, Bound b):
-      val(v), depth(d), bestMoveIdx(bmi), bound(b) {}
+    TTRec(S16 v, signed char d, Move bm, Bound b):
+      val(v), depth(d), bestMove(bm), bound(b) {}
   };
 //*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
@@ -57,6 +57,9 @@ namespace tt {
       //Let each piece-count buffer hold 2^30 values
       //bufs[pc] = (pair<U64, TTRec>*) malloc((MOD_MASK + 1) * sizeof(pair<U64, TTRec>));
       bufs[pc] = new pair<U64, TTRec>[MOD_MASK + 1];
+      for (unsigned long long idx = 0; idx < MOD_MASK + 1; idx += 256) {
+        *(volatile char*) (bufs[pc] + idx);
+      }
     }
   }
 
