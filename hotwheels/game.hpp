@@ -37,7 +37,8 @@ struct Move {
     toIdx = (tr*7 + tc);
   }
 
-  Move(signed char f, signed char t): fromIdx(f), toIdx(t) {
+  Move(signed char f, signed char t):
+      fromIdx(f), toIdx(t) {
 #ifndef UNSAFE_MODE
     if (f > 55 || t > 55) {
       printf("INVALID MOVE! f:%d t:%d\n", f, t);
@@ -76,7 +77,8 @@ struct Move {
   }
 
   inline bool operator==(Move move) {
-    return fromIdx == move.fromIdx && toIdx == move.toIdx;
+    return fromIdx == move.fromIdx
+      && toIdx == move.toIdx;
   }
 };
 
@@ -85,13 +87,16 @@ struct GameState;
 extern GameState* testRoot;
 extern unsigned long long testSeed;
 
+signed char pieceTypeAt(const GameState* state, int idx);
 U64 HashCode(const GameState* state);
-U64 HashCode(const GameState* old, Move move);
+U64 HashCode(const Move move, signed char fromType, signed char capType);
 
 struct GameState {
   
+#ifndef UNSAFE_MODE
   GameState const* prev = NULL;
   Move moveToHere;
+#endif
   union {
     U64 bitBoards[7];
     struct {
@@ -110,6 +115,7 @@ struct GameState {
     };
   };
   U64 hashCode;
+  U64 invHashCode;
 #ifndef UNSAFE_MODE
   bool valid = true;
 #endif
@@ -120,8 +126,10 @@ struct GameState {
   ((board & ~fromBit & ~toBit) | ((board & fromBit) ? toBit : 0))
 
   GameState(const GameState* state, Move move) {
+#ifndef UNSAFE_MODE
     prev = state;
     moveToHere = move;
+#endif
     U64 fromBit = 1ULL << move.fromIdx;
     U64 toBit = 1ULL << move.toIdx;
     pieces = (state->pieces & ~fromBit) | toBit;
@@ -154,7 +162,21 @@ struct GameState {
       valid = false;
     }
 #endif
-    hashCode = HashCode(this, move);
+    signed char ft = pieceTypeAt(state, move.fromIdx);
+    signed char tt = pieceTypeAt(state, move.toIdx);
+    hashCode = state->hashCode ^ HashCode(move, ft, tt);
+    invHashCode = state->invHashCode ^ HashCode(move.Invert(), ft, tt);
+#ifndef UNSAFE_MODE
+    if (hashCode != HashCode(this)) {
+      std::cerr << "Hash codes are not canonical :(\n" << std::endl;
+      valid = false;
+    }
+    GameState inv = this->Invert();
+    if (invHashCode != HashCode(&inv)) {
+      std::cerr << "Inverted hash codes are not canonical :(\n" << std::endl;
+      valid = false;
+    }
+#endif
   }
 
   GameState():
@@ -177,26 +199,11 @@ struct GameState {
       }
 #endif
       hashCode = HashCode(this);
+      invHashCode = hashCode;
     }
 
-  GameState(U64 pc, U64 t, U64 c, U64 k, U64 b, U64 r, U64 p)
-    : pieces(pc), teams(t), cars(c), knights(k), bishops(b), rooks(r), pawns(p) {
-#ifndef UNSAFE_MODE
-      if (pieces != (cars | knights | bishops | rooks | pawns)) {
-        std::cerr << "WARN! Pieces Board != BitwiseOR of piece boards!" << std::endl;
-        PrintComponents();
-        valid = false;
-      }
-      if (pieces >= (1ULL << 56)) {
-        std::cerr << "WARN! Pieces Off Board!" << std::endl;
-        valid = false;
-      }
-#endif
-      hashCode = HashCode(this);
-  }
-
-  GameState(U64 pc, U64 t, U64 c, U64 k, U64 b, U64 r, U64 p, U64 hc)
-    : pieces(pc), teams(t), cars(c), knights(k), bishops(b), rooks(r), pawns(p), hashCode(hc) {
+  GameState(U64 pc, U64 t, U64 c, U64 k, U64 b, U64 r, U64 p, U64 hc, U64 ihc)
+    : pieces(pc), teams(t), cars(c), knights(k), bishops(b), rooks(r), pawns(p), hashCode(hc), invHashCode(ihc) {
 #ifndef UNSAFE_MODE
       if (pieces != (cars | knights | bishops | rooks | pawns)) {
         std::cerr << "WARN! Pieces Board != BitwiseOR of piece boards!" << std::endl;
@@ -366,10 +373,13 @@ struct GameState {
       FlipVert(this->knights),
       FlipVert(this->bishops),
       FlipVert(this->rooks),
-      FlipVert(this->pawns)//,
-      //~((((hashCode & 0xFFFFFFFFULL)) << 32) | ((hashCode & 0xFFFFFFFF00000000ULL) >> 32))
+      FlipVert(this->pawns),
+      this->invHashCode,
+      this->hashCode
     );
+#ifndef UNSAFE_MODE
     ret.prev = this;
+#endif
     return ret;
   }
 

@@ -6,7 +6,7 @@ static inline unsigned long bitscanll(unsigned long long l) {
   return __builtin_ffsll(l);
 }
 static inline unsigned int popcount(unsigned long long l) {
-  return __builtin_popcount(l);
+  return __builtin_popcountll(l);
 }
 
 #elif _WIN32

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include <stdlib.h>
 
 #ifdef _WIN32
@@ -28,7 +29,7 @@ void enableAltScreen() {
 }
 
 void disableAltScreen() {
-  //std::cout << "\x1B[?1049lThank you for playing!" << std::endl;
+  //std::cout << "\x3B[?1049lThank you for playing!" << std::endl;
 }
 
 int humanVsHuman();
@@ -109,6 +110,7 @@ int humanVsComputer() {
   Move moves[MOVE_ARR_LEN];
   Move move;
   int winner;
+  std::thread ponderThread;
 
   for (;;) {
     winner = state.GetWinner();
@@ -131,6 +133,10 @@ int humanVsComputer() {
     if (turn) {
       ui::displayAll();
       std::cout << "Computer is thinking... " << std::endl;
+      StopPondering();
+      if (ponderThread.joinable()) {
+        ponderThread.join();
+      }
       GameState inv = state.Invert();
       move = MyBestMove(&inv).Invert();
       ui::prevState = state;
@@ -157,9 +163,10 @@ int humanVsComputer() {
         std::cout << ",";
       }
       std::cout << std::endl << "]" << std::endl;
-      std::cout << "Please wait while I clean house... " << std::endl;
-      tt::cleanup(&state);
-      std::cout << "all clean!" << std::endl;
+      //std::cout << "Please wait while I clean house... " << std::endl;
+      //tt::cleanup(&state);
+      //std::cout << "all clean!" << std::endl;
+      ponderThread = std::thread(Ponder, state.Invert());
       for (;;) {
         std::cout << "Where would you like to move?" << std::endl;
         std::cin >> input;

@@ -22,19 +22,30 @@ namespace tt {
   enum Bound{EXACT, UPPER, LOWER};
   struct TTRec {
     MMRet val;
-    int depth;
-    int bestMoveIdx;
+    signed char depth;
+    signed char bestMoveIdx;
     Bound bound;
+
+    TTRec() {
+      val = {MMRet::ABORT};
+      depth = 0;
+      bestMoveIdx = -1;
+      bound = Bound::EXACT;
+    }
+
+    TTRec(MMRet v, signed char d, signed char bmi, Bound b):
+      val(v), depth(d), bestMoveIdx(bmi), bound(b) {}
   };
-/*
+//*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
-  extern pair<U64, TTRec> bufs[27][1ULL << 20];
+  extern pair<U64, TTRec>* bufs[27];
   static U64 MOD_MASK = (1ULL << 20) - 1;
 
   static inline void init() {
-    for (int pc = 0; pc < 25; ++pc) {
-      // Let each piece-count buffer hold 2^30 values
+    for (int pc = 2; pc < 27; ++pc) {
+      //Let each piece-count buffer hold 2^30 values
       //bufs[pc] = (pair<U64, TTRec>*) malloc((MOD_MASK + 1) * sizeof(pair<U64, TTRec>));
+      bufs[pc] = new pair<U64, TTRec>[MOD_MASK + 1];
     }
   }
 
@@ -58,9 +69,11 @@ namespace tt {
     return std::make_pair(0, TTRec());
   }
 
-  static inline void clear() {}
+  static inline void clear() {
+  }
   static inline void cleanup(const GameState* state) {
     // noop. We already did all our allocing so freeing won't help.
+
   }
 }
 
@@ -73,24 +86,24 @@ namespace tt {
   }
 
   static inline void init() {
-    tbl.reserve(2800ULL);
+    tbl.reserve(280000ULL);
   }
 
   void cleanup(const GameState* state);
   
   static inline void setValue(const GameState* state, TTRec rec) {
-    if (rec.val.tag != MMRet::ABORT
-        && (tbl.find(*state) == tbl.end()
-          || rec.depth > tbl[*state].depth)) {
-      tbl[*state] = rec;
+    if (rec.val.tag != MMRet::ABORT) {
+      TTRec &existing = tbl[*state];
+      if (rec.depth > existing.depth) {
+        existing = rec;
+      }
     }
   }
   static inline bool hasValue(const GameState* state) {
-    return tbl.find(*state) != tbl.end()
-      && tbl[*state].val.tag != MMRet::ABORT;
+    return tbl.find(*state) != tbl.end();
   }
   static inline pair<U64, TTRec> getValue(const GameState* state) {
-    return hasValue(state) ? std::make_pair(state->hashCode, tbl[*state]) : std::make_pair(0ULL, TTRec{MMRet::ABORT});
+    return hasValue(state) ? std::make_pair(state->hashCode, tbl[*state]) : std::make_pair(0ULL, TTRec());
   }
 }
 //*/

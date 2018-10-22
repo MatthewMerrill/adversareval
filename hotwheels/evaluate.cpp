@@ -38,11 +38,18 @@ float evaluate(const GameState* state) {
   U64 blockingTheirs = state->pieces & theirTrack & ~(theirCar - 1);
   unsigned long myCarIdx = bitscanll(myCar);
   unsigned long theirCarIdx = bitscanll(theirCar);
-  /*
-  int nMyMoves = GetMoves(state, idkWhichMoves); // TODO: better to give them 1 move that's not their 1 car move
-  int nTheirMoves = GetMoves(state, idkWhichMoves);
-  */
-  return 21.0f*(myCarIdx%7) + 20 * popcount(blockingTheirs) + 10 * popcount(blockingTheirs & ~state->teams) + popcount(state->pieces & ~state->teams)
-       - 21*(theirCarIdx%7) - 20 * popcount(blockingMine) - 10 * popcount(blockingMine & state->teams) - popcount(state->pieces & state->teams);
+  //
+  //int nMyMoves = GetMoves(state, idkWhichMoves); // TODO: better to give them 1 move that's not their 1 car move
+  //int nTheirMoves = GetMoves(state, idkWhichMoves);
+  return 21.0f*(myCarIdx%7)
+    + 20 * popcount(blockingTheirs)
+    + 10 * popcount(blockingTheirs & ~state->teams)
+    + popcount(state->pieces & ~state->teams)
+
+    - 21*(theirCarIdx%7)
+    - 20 * popcount(blockingMine)
+    - 10 * popcount(blockingMine & state->teams)
+    - popcount(state->pieces & state->teams);
 }
+//*/
 

@@ -107,6 +107,8 @@ struct MMRet {
 };
 
 
+void Ponder(const GameState state);
+void StopPondering();
 Move MyBestMove(const GameState* state);
 std::pair<Move, MMRet> MyBestMoveAtDepth(const GameState* state, int depth);
 

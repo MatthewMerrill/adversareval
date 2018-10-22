@@ -7,8 +7,8 @@
 #include "transpositiontbl.hpp"
 
 namespace tt {
-  /*
-  pair<U64, TTRec> bufs[27][1ULL << 20];
+  //*
+  pair<U64, TTRec>* bufs[27];
   /*/
   std::unordered_map<GameState, TTRec> tbl = {};
 

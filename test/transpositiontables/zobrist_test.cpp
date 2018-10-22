@@ -7,7 +7,7 @@
 #include "minimax.hpp"
 #include "transpositiontbl.hpp"
 #include "transpositiontables/zobrist.hpp"
-
+/*
 TEST(TestZobrist, NullSeed) {
   unsigned long long keys[4][4];
   unsigned long long* keysPtrs[] = { keys[0], keys[1], keys[2], keys[3] };
@@ -27,8 +27,33 @@ TEST(TestZobrist, NullSeed) {
     }
     //std::cout << ((r == 3) ? "" : ",") << std::endl;
   }
+}*/
+
+TEST(TestRunningHash, InitialHashes) {
+  GameState initialState = GameState();
+  EXPECT_EQ(4563749063352816831ULL, initialState.hashCode);
+  EXPECT_EQ(4563749063352816831ULL, initialState.invHashCode);
 }
 
+TEST(TestRunningHash, AfterAMove) {
+  GameState initialState = GameState();
+  Move carUp = Move(0, 7);
+  GameState afterMove = initialState.ApplyMove(carUp);
+  GameState afterInvMove = initialState.ApplyMove(carUp.Invert());
+  EXPECT_EQ(0, afterMove.hashCode - afterInvMove.invHashCode);
+  EXPECT_EQ(0, afterMove.invHashCode - afterInvMove.hashCode);
+}
+
+TEST(TestRunningHash, AfterAnotherMove) {
+  GameState initialState = GameState();
+  Move carUp = Move(0, 7);
+  GameState afterMove = initialState.ApplyMove(carUp);
+  GameState afterInvMove = initialState.ApplyMove(carUp.Invert()).Invert();
+  EXPECT_EQ(0, afterMove.hashCode - afterInvMove.hashCode);
+  EXPECT_EQ(0, afterMove.invHashCode - afterInvMove.invHashCode);
+}
+
+/*
 TEST(TestTable, BasicMap) {
   GameState state;
   tt::setValue(&state, {{MMRet::WIN}, 16});
@@ -36,5 +61,5 @@ TEST(TestTable, BasicMap) {
   MMRet act = tt::getValue(&state).val;
   EXPECT_EQ(exp, act);
   EXPECT_EQ(16, tt::getValue(&state).depth);
-}
+}*/
 

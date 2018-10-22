@@ -8,24 +8,24 @@ U64 HashCode(const GameState* state) {
   return tt::hash(state);
 }
 
+signed char pieceTypeAt(const GameState* state, int idx) {
+  U64 bit = 1ULL << idx;
+  int type = 0; // no piece
+  type += 1 * ((state->cars    & bit) >> idx);
+  type += 2 * ((state->knights & bit) >> idx);
+  type += 3 * ((state->bishops & bit) >> idx);
+  type += 4 * ((state->rooks   & bit) >> idx);
+  type += 5 * ((state->pawns   & bit) >> idx);
+  return type;
+}
+
 using namespace tt;
 
-U64 HashCode(const GameState* state, Move move) {
-  U64 fromBit = 1ULL << move.fromIdx;
-  U64 toBit = 1ULL << move.toIdx;
-  U64 hash = state->hashCode;
-  hash ^= (state->teams   & fromBit) ? ZOBRIST_KEYS[1 * 56 + move.fromIdx] : 0;
-  hash ^= (state->cars    & fromBit) ? ZOBRIST_KEYS[2 * 56 + move.fromIdx] : 0;
-  hash ^= (state->knights & fromBit) ? ZOBRIST_KEYS[3 * 56 + move.fromIdx] : 0;
-  hash ^= (state->bishops & fromBit) ? ZOBRIST_KEYS[4 * 56 + move.fromIdx] : 0;
-  hash ^= (state->rooks   & fromBit) ? ZOBRIST_KEYS[5 * 56 + move.fromIdx] : 0;
-  hash ^= (state->pawns   & fromBit) ? ZOBRIST_KEYS[6 * 56 + move.fromIdx] : 0;
-  hash ^= (state->teams   & toBit) ? ZOBRIST_KEYS[1 * 56 + move.toIdx] : 0;
-  hash ^= (state->cars    & toBit) ? ZOBRIST_KEYS[2 * 56 + move.toIdx] : 0;
-  hash ^= (state->knights & toBit) ? ZOBRIST_KEYS[3 * 56 + move.toIdx] : 0;
-  hash ^= (state->bishops & toBit) ? ZOBRIST_KEYS[4 * 56 + move.toIdx] : 0;
-  hash ^= (state->rooks   & toBit) ? ZOBRIST_KEYS[5 * 56 + move.toIdx] : 0;
-  hash ^= (state->pawns   & toBit) ? ZOBRIST_KEYS[6 * 56 + move.toIdx] : 0;
+U64 HashCode(const Move move, signed char fromType, signed char capType) {
+  U64 hash = 0;
+  hash ^= ZOBRIST_KEYS[fromType * 56 + move.fromIdx];
+  hash ^= ZOBRIST_KEYS[fromType * 56 + move.toIdx];
+  hash ^= ZOBRIST_KEYS[capType * 56 + move.toIdx];
   return hash;
 }
 

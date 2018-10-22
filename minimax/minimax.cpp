@@ -14,6 +14,8 @@
 #include "historytables.hpp"
 #include "transpositiontbl.hpp"
 
+#include <mutex>
+
 #define MINIMAX_TIME_CUTOFF 5
 
 
@@ -24,9 +26,23 @@ U64 evalsDone = 0;
 time_t start = 0;
 Move moveBuf[70 * 30];
 
+std::mutex mm_mutex;
+
 static float randomUniform01() {
   // https://stackoverflow.com/a/9879024/3188059
   return ((float) rand() / (RAND_MAX));
+}
+
+void Ponder(GameState state) {
+  int depth = 5;
+  std::lock_guard<std::mutex> guard(mm_mutex);
+  while (start == 0) {
+    MyBestMoveAtDepth(&state, depth);
+    ++depth;
+  }
+}
+void StopPondering() {
+  start = 1;
 }
 
 Move MyBestMove(const GameState* state) {
@@ -36,6 +52,8 @@ Move MyBestMove(const GameState* state) {
   Move best;
   hl::resetTable();
   //tt::clear();
+  start = 1;
+  std::lock_guard<std::mutex> guard(mm_mutex);
   start = time(NULL); 
   while (depth < 30 && time(NULL) - start < MINIMAX_TIME_CUTOFF) {
     evalsDone = 0;
@@ -126,7 +144,7 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
     return ret;
   }
 
-  if (start != 0 && time(NULL) - start > MINIMAX_TIME_CUTOFF) {
+  if (start == 1 || (start != 0 && time(NULL) - start > MINIMAX_TIME_CUTOFF)) {
     return {MMRet::ABORT};
   }
 
@@ -150,7 +168,7 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
         if (ttrec.depth >= depth) {
           if (ttrec.bound == tt::Bound::EXACT) {
             return ttrec.val;
-          }
+          }/*
           else if (ttrec.bound == tt::Bound::LOWER) {
             // max(alpha, ttrec.val)
             alpha = (alpha > ttrec.val) ? alpha : ttrec.val;
@@ -158,7 +176,7 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
           else if (ttrec.bound == tt::Bound::UPPER) {
             // min(beta, ttrec.val)
             beta = (beta < ttrec.val) ? beta : ttrec.val;
-          }
+          }*/
         }
         break;
       default:
@@ -169,7 +187,7 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
       std::sort(childMoves + 1, childMoves + nmoves, hl::keyCmp);
     }
     else {
-      printf("Hmm ttrec has an invalid move idx?\n");
+      //printf("Hmm ttrec has an invalid move idx?\n");
       std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
     }
     
@@ -182,16 +200,17 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
   }
   // Okay we don't have a TT and we're not done yet. Just use HistTbl.
   else {
-    std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
+    //std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
   }
 
+  tt::Bound bound = tt::Bound::EXACT;
   MMRet value = {MMRet::ABORT};
   MMRet oldAlpha = alpha;
-  int bestIdx = -1;
+  signed char bestIdx = -1;
   if (nmoves == 0) {
     std::cerr << "WARN: Umm this shouldn't be possible! Err: 012938";
   }
-  for (int idx = 0; idx < nmoves; ++idx) {
+  for (signed char idx = 0; idx < nmoves; ++idx) {
     Move move = childMoves[idx];
     GameState newState = state->ApplyMove(move).Invert();
     MMRet nm = negamax(&newState, depth-1, moveBufBase + nmoves,
@@ -208,7 +227,8 @@ MMRet negamax(const GameState* state, int depth, int moveBufBase,
         }
         alpha = (alpha > value) ? alpha : value;
         if (alpha > beta || alpha == beta) {
-          hl::incrementTable(move, 20000);
+          bound = tt::Bound::LOWER;
+          hl::incrementTable(move, 200);
           goto done;
         }
     }
@@ -217,26 +237,27 @@ done:
   if (value.tag != MMRet::ABORT) {
     switch (value.tag) {
       case MMRet::WIN:
-        hl::incrementTable(childMoves[bestIdx], 1000000);
+        hl::incrementTable(childMoves[bestIdx], 100000);
         break;
       case MMRet::LOSE:
-        hl::incrementTable(childMoves[bestIdx], -1000000);
+        hl::incrementTable(childMoves[bestIdx], -100000);
         break;
       case MMRet::NORMAL:
-        hl::incrementTable(childMoves[bestIdx], (int) (1000 * value.eval));
+        hl::incrementTable(childMoves[bestIdx], (int) (10 * value.eval));
         break;
       default:
         hl::incrementTable(childMoves[bestIdx], 100);
         break;
     }
-    tt::Bound bound = tt::Bound::EXACT;
-    if (value < oldAlpha || value == oldAlpha) {
-      bound = tt::Bound::UPPER;
+    if (depth > 4) {
+      if (value < oldAlpha || value == oldAlpha) {
+        bound = tt::Bound::UPPER;
+      }
+      if (value > beta || value == beta) {
+        bound = tt::Bound::LOWER;
+      }
+      tt::setValue(state, TTRec(value, depth, bestIdx, bound));
     }
-    if (value > beta || value == beta) {
-      bound = tt::Bound::LOWER;
-    }
-    tt::setValue(state, {value, depth, bestIdx, bound});
   }
   return value;
 }
