@@ -22,6 +22,29 @@ cc_binary(
 )
 
 cc_binary(
+  name = "featureeng",
+  srcs = glob([
+        "hotwheels/**/*.cpp",
+        "hotwheels/**/*.hpp",
+        "minimax/**/*.cpp",
+        "minimax/**/*.hpp",
+        "ansi/**/*.cpp",
+        "ansi/**/*.hpp",
+        "nn/featureeng.cpp",
+        "transpositiontables/**/*.cpp",
+        "transpositiontables/**/*.hpp",
+        ], exclude = ["hotwheels/main.cpp", "hotwheels/evaluate_nn.cpp"]),
+  linkopts = ["-pthread"],
+  copts = [
+      "-Ihotwheels",
+      "-Iminimax",
+      "-Itranspositiontables",
+      "-Iansi",
+      "-std=c++11",
+      ],
+)
+
+cc_binary(
   name = "winprobgen",
   srcs =
     glob([

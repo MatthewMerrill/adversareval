@@ -96,7 +96,7 @@ print([(res[i][0], sample_y[i][0]) for i in range(len(sample_y))])
 
 #import time
 
-model.save('models/model1.h5')
-with open("models/model1.json", "w") as f:
+model.save('models/model_feat_1.h5')
+with open("models/model_feat_1.json", "w") as f:
     f.write(model.to_json())
 

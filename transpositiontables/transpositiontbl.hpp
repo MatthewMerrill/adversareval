@@ -21,19 +21,19 @@ namespace tt {
   
   enum Bound{EXACT, UPPER, LOWER};
   struct TTRec {
-    MMRet val;
+    S16 val;
     signed char depth;
     signed char bestMoveIdx;
     Bound bound;
 
     TTRec() {
-      val = {MMRet::ABORT};
+      val = 20000;
       depth = 0;
       bestMoveIdx = -1;
       bound = Bound::EXACT;
     }
 
-    TTRec(MMRet v, signed char d, signed char bmi, Bound b):
+    TTRec(S16 v, signed char d, signed char bmi, Bound b):
       val(v), depth(d), bestMoveIdx(bmi), bound(b) {}
   };
 //*
@@ -51,7 +51,7 @@ namespace tt {
 
   static inline void setValue(const GameState* state, TTRec rec) {
     int pieceCount = popcount(state->pieces);
-    if (rec.val.tag != MMRet::ABORT) {
+    if (rec.val != 20000 && rec.val != -20000) {
       const auto optPair = bufs[pieceCount][state->hashCode & MOD_MASK];
       if (optPair.first != 0 && optPair.second.depth > rec.depth) {
         return; // Already something better there.

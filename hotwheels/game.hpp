@@ -9,6 +9,7 @@
 #include "bitscan.hpp"
 
 #define U64 unsigned long long
+#define S16 signed short
 #define MOVE_ARR_LEN 48
 
 static U64 FULL_BOARD = (1ULL << 56) - 1;

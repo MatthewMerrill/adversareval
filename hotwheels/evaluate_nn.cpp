@@ -9,7 +9,7 @@
 
 const auto model = fdeep::load_model("models/fdeep_model2.json");
 
-float evaluate(const GameState* state) {
+signed short evaluate(const GameState* state) {
   fdeep::tensor3 tensor(fdeep::shape_hwc(8, 7, 10), 0.0);
   
   U64 pieces = state->pieces;
@@ -46,6 +46,6 @@ float evaluate(const GameState* state) {
   const auto result_vec = model.predict({tensor});
   const auto result_val = 1.0 * result_vec[0].get_yxz(0, 0, 0);
   //std::cout << result_val << std::endl;
-  return (result_val / 100.0) - .5;
+  return (signed short) (result_val - 50);
 }
 

@@ -3,7 +3,7 @@
 
 #include "game.hpp"
 
-float evaluate(const GameState* gameState);
+signed short evaluate(const GameState* gameState);
 GameState* newGameState();
 
 #endif
