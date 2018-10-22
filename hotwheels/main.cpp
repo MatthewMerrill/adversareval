@@ -111,8 +111,10 @@ int humanVsComputer() {
   Move move;
   int winner;
   std::thread ponderThread;
+  epoch = 0;
 
   for (;;) {
+    epoch += 1;
     winner = state.GetWinner();
     if (winner) {
       ui::displayAll();
@@ -143,14 +145,17 @@ int humanVsComputer() {
       state = state.ApplyMove(move);
       ui::curState = state;
       ui::historyVector.push_back(move);
-      std::cout << "I'm moving to: ";
-      move.Print();
-      std::cout << " (";
-      move.Invert().Print();
-      std::cout << ")";
-      std::cin.ignore();
-      std::cin.ignore();
     } else {
+      ponderThread = std::thread(Ponder, state.Invert());
+      if (move.fromIdx > -1) {
+        std::cout << "I'm moving to: ";
+        move.Print();
+        std::cout << " (";
+        move.Invert().Print();
+        std::cout << ")";
+        std::cin.ignore();
+        std::cin.ignore();
+      }
       ui::displayAll();
       std::cout << "Moves available: " << std::endl << "[";
       int nmoves = GetMoves(&state, moves);
@@ -166,7 +171,6 @@ int humanVsComputer() {
       //std::cout << "Please wait while I clean house... " << std::endl;
       //tt::cleanup(&state);
       //std::cout << "all clean!" << std::endl;
-      ponderThread = std::thread(Ponder, state.Invert());
       for (;;) {
         std::cout << "Where would you like to move?" << std::endl;
         std::cin >> input;
@@ -215,10 +219,12 @@ int computerVsComputer() {
   for (int gameIdx = 0; gameIdx < 20; ++gameIdx) {
     state = GameState();
     turn = 0;
+    epoch = 0;
     ui::displayAll();
     ui::historyVector.clear();
     tt::clear();
     for (;;) {
+      epoch += 1;
       winner = state.GetWinner();
       if (winner) {
         ui::displayAll();

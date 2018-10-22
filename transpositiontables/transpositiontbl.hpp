@@ -39,9 +39,20 @@ namespace tt {
 //*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
   extern pair<U64, TTRec>* bufs[27];
-  static U64 MOD_MASK = (1ULL << 20) - 1;
+  static U64 MOD_MASK;
 
   static inline void init() {
+    printf("How many GB Ram can you burn? ");
+    U64 inp;
+    scanf("%llu", &inp);
+    inp *= 1000000000ULL;
+    inp /= 25;
+    inp /= sizeof(pair<U64, TTRec>);
+    MOD_MASK = 1;
+    while ((MOD_MASK << 1) <= inp) {
+      MOD_MASK <<= 1;
+    }
+    MOD_MASK -= 1;
     for (int pc = 2; pc < 27; ++pc) {
       //Let each piece-count buffer hold 2^30 values
       //bufs[pc] = (pair<U64, TTRec>*) malloc((MOD_MASK + 1) * sizeof(pair<U64, TTRec>));

@@ -10,8 +10,6 @@ U64 theirTrack = 0x02082780000000ULL;
 signed short evaluate(const GameState* state) {
   U64 myCar = state->cars & ((state->cars - 1) << 1);
   U64 theirCar = state->cars - myCar;
-  U64 blockingMine = state->pieces & myTrack & ~(((myCar - 1) << 1) | 1);
-  U64 blockingTheirs = state->pieces & theirTrack & ~(theirCar - 1);
   unsigned long myCarIdx = bitscanll(myCar);
   unsigned long theirCarIdx = bitscanll(theirCar);
 
@@ -23,26 +21,26 @@ signed short evaluate(const GameState* state) {
     bit = 1ULL << (idx-1);
     pieces ^= bit;
     if (state->teams & bit) {
-      if (blockingMine & bit) {
-        eval -= 5;
+      if ((myTrack & bit) && (bit > myCar)) {
+        eval -= 10;
       }
-      if (blockingTheirs & bit) {
-        eval += 3;
+      if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
+        eval += 25;
       }
       if (state->cars & bit) {
-        eval -= 6 * (idx % 7);
+        eval -= 30 * ((idx - 1) % 7);
       }
       eval -= 1;
     }
     else {
-      if (blockingTheirs & bit) {
-        eval += 5;
+      if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
+        eval += 10;
       }
-      if (blockingMine &= bit) {
-        eval -= 3;
+      if ((myTrack & bit) && (bit > myCar)) {
+        eval -= 25;
       }
       if (state->cars & bit) {
-        eval += 6 * (idx % 7);
+        eval += 30 * ((idx - 1) % 7);
       }
       eval += 1;
     }
