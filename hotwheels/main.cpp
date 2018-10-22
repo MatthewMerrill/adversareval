@@ -117,13 +117,16 @@ int humanVsComputer() {
     epoch += 1;
     winner = state.GetWinner();
     if (winner) {
-      if (turn) {
+      if (!turn) {
         if (move.fromIdx > -1) {
           std::cout << "I'm moving to: ";
           move.Print();
           std::cout << " (";
           move.Invert().Print();
-          std::cout << ")";
+          std::cout << ")" << std::endl;
+          std::cout << "Cleaning...";
+          tt::cleanup(&state);
+          std::cout << " Done! ";
           std::cin.ignore();
           std::cin.ignore();
         }
@@ -157,15 +160,21 @@ int humanVsComputer() {
       ui::curState = state;
       ui::historyVector.push_back(move);
     } else {
-      ponderThread = std::thread(Ponder, state.Invert());
       if (move.fromIdx > -1) {
         std::cout << "I'm moving to: ";
         move.Print();
         std::cout << " (";
         move.Invert().Print();
-        std::cout << ")";
+        std::cout << ")" << std::endl;
+        std::cout << "Cleaning...";
+        tt::cleanup(&state);
+        std::cout << " Done! ";
+        ponderThread = std::thread(Ponder, state.Invert());
         std::cin.ignore();
         std::cin.ignore();
+      }
+      else {
+        ponderThread = std::thread(Ponder, state.Invert());
       }
       ui::displayAll();
       std::cout << "Moves available: " << std::endl << "[";

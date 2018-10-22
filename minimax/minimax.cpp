@@ -120,7 +120,7 @@ Move MyBestMove(const GameState* state) {
     }
     // No Force Wins Found
     else {
-      printf(" Evaluated at: %7d.\n", p.second);
+      printf(" Evaluated at: %7d.", p.second);
       resettext();
       std::cout << std::flush;
       ++depth;
@@ -273,7 +273,7 @@ pair<Move, S16> MyBestMoveAtDepthMTDF(const GameState* state, int depth) {
     Move move = childMoves[moveIdx];
     GameState newState = state->ApplyMove(move).Invert();
     S16 f = fBuf[moveIdx];
-    f += (depth & 1) ? -30 : 30;
+    //f += (depth & 1) ? -30 : 30;
     //printf("expected: %3d ", -f);
     f = -MTDF(&newState, -f, depth - 1, 0 + 1);
     //printf("actual:   %3d\n", -f);

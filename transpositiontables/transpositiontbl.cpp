@@ -8,7 +8,7 @@
 
 namespace tt {
   //*
-  pair<U64, TTRec>* bufs[27];
+  pair<U64, TTRec>* bufs;
   U64 MOD;
   /*/
   std::unordered_map<GameState, TTRec> tbl = {};

@@ -25,6 +25,7 @@ namespace tt {
     signed char depth;
     Move bestMove;
     Bound bound;
+    signed char pieceCount;
 
     TTRec() {
       val = 20000;
@@ -38,44 +39,37 @@ namespace tt {
   };
 //*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
-  extern pair<U64, TTRec>* bufs[27];
+  extern pair<U64, TTRec>* bufs;
   extern U64 MOD;
+  extern signed char epoch;
 
   static inline void init() {
     printf("How many GB Ram can you burn? ");
     double inp;
     std::cin >> inp;
-    inp /= 25;
-    printf("%lf\n", inp);
     inp *= 1000000000.0;
     inp /= sizeof(pair<U64, TTRec>);
-    printf("%lf\n", inp);
     MOD = (U64) inp;
-    scanf("\n");
-    for (int pc = 2; pc < 27; ++pc) {
-      //Let each piece-count buffer hold 2^30 values
-      //bufs[pc] = (pair<U64, TTRec>*) malloc((MOD_MASK + 1) * sizeof(pair<U64, TTRec>));
-      bufs[pc] = new pair<U64, TTRec>[MOD + 1];
-      for (unsigned long long idx = 0; idx < MOD + 1; idx += 256) {
-        *(volatile char*) (bufs[pc] + idx);
-      }
+
+    bufs = new pair<U64, TTRec>[MOD + 1];
+    for (unsigned long long idx = 0; idx < MOD + 1; idx += 256) {
+      *(volatile char*) (bufs + idx);
     }
   }
 
   static inline void setValue(const GameState* state, TTRec rec) {
-    int pieceCount = popcount(state->pieces);
     if (rec.val != 20000 && rec.val != -20000) {
-      const auto optPair = bufs[pieceCount][state->hashCode % MOD];
+      const auto optPair = bufs[state->hashCode % MOD];
       if (optPair.first != 0 && optPair.second.depth > rec.depth) {
         return; // Already something better there.
       }
-      bufs[pieceCount][state->hashCode % MOD] = std::make_pair(state->hashCode, rec);
+      rec.pieceCount = popcount(state->pieces);
+      bufs[state->hashCode % MOD] = std::make_pair(state->hashCode, rec);
     }
   }
 
   static inline pair<U64, TTRec> getValue(const GameState* state) {
-    int pieceCount = popcount(state->pieces);
-    const auto p = bufs[pieceCount][state->hashCode % MOD];
+    const auto p = bufs[state->hashCode % MOD];
     if (p.first == state->hashCode) {
       return p;
     }
@@ -83,10 +77,18 @@ namespace tt {
   }
 
   static inline void clear() {
+    for (U64 i = 0; i < MOD; ++i) {
+      bufs[i].first = 0;
+    }
   }
   static inline void cleanup(const GameState* state) {
     // noop. We already did all our allocing so freeing won't help.
-
+    int pieceCount = popcount(state->pieces);
+    for (U64 i = 0; i < MOD; ++i) {
+      if (bufs[i].first != 0 && pieceCount < bufs[i].second.pieceCount) {
+        bufs[i].first = 0;
+      }
+    }
   }
 }
 
