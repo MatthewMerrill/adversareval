@@ -39,25 +39,24 @@ namespace tt {
 //*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
   extern pair<U64, TTRec>* bufs[27];
-  static U64 MOD_MASK;
+  extern U64 MOD;
 
   static inline void init() {
     printf("How many GB Ram can you burn? ");
-    U64 inp;
-    scanf("%llu", &inp);
-    inp *= 1000000000ULL;
+    double inp;
+    std::cin >> inp;
     inp /= 25;
+    printf("%lf\n", inp);
+    inp *= 1000000000.0;
     inp /= sizeof(pair<U64, TTRec>);
-    MOD_MASK = 1;
-    while ((MOD_MASK << 1) <= inp) {
-      MOD_MASK <<= 1;
-    }
-    MOD_MASK -= 1;
+    printf("%lf\n", inp);
+    MOD = (U64) inp;
+    scanf("\n");
     for (int pc = 2; pc < 27; ++pc) {
       //Let each piece-count buffer hold 2^30 values
       //bufs[pc] = (pair<U64, TTRec>*) malloc((MOD_MASK + 1) * sizeof(pair<U64, TTRec>));
-      bufs[pc] = new pair<U64, TTRec>[MOD_MASK + 1];
-      for (unsigned long long idx = 0; idx < MOD_MASK + 1; idx += 256) {
+      bufs[pc] = new pair<U64, TTRec>[MOD + 1];
+      for (unsigned long long idx = 0; idx < MOD + 1; idx += 256) {
         *(volatile char*) (bufs[pc] + idx);
       }
     }
@@ -66,17 +65,17 @@ namespace tt {
   static inline void setValue(const GameState* state, TTRec rec) {
     int pieceCount = popcount(state->pieces);
     if (rec.val != 20000 && rec.val != -20000) {
-      const auto optPair = bufs[pieceCount][state->hashCode & MOD_MASK];
+      const auto optPair = bufs[pieceCount][state->hashCode % MOD];
       if (optPair.first != 0 && optPair.second.depth > rec.depth) {
         return; // Already something better there.
       }
-      bufs[pieceCount][state->hashCode & MOD_MASK] = std::make_pair(state->hashCode, rec);
+      bufs[pieceCount][state->hashCode % MOD] = std::make_pair(state->hashCode, rec);
     }
   }
 
   static inline pair<U64, TTRec> getValue(const GameState* state) {
     int pieceCount = popcount(state->pieces);
-    const auto p = bufs[pieceCount][state->hashCode & MOD_MASK];
+    const auto p = bufs[pieceCount][state->hashCode % MOD];
     if (p.first == state->hashCode) {
       return p;
     }

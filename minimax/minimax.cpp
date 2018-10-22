@@ -275,7 +275,7 @@ pair<Move, S16> MyBestMoveAtDepthMTDF(const GameState* state, int depth) {
     S16 f = fBuf[moveIdx];
     f += (depth & 1) ? -30 : 30;
     //printf("expected: %3d ", -f);
-    f = -MTDF(&newState, -f, depth - 1, epoch + 1);
+    f = -MTDF(&newState, -f, depth - 1, 0 + 1);
     //printf("actual:   %3d\n", -f);
     fBuf[moveIdx] = f;
 

@@ -29,7 +29,7 @@ signed short evaluate(const GameState* state) {
     else if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
       eval += 10;
       eval += ((idx - 1) % 7);
-      eval += ((8 - (theirCarIdx - idx)) % 7);
+      eval -= ((8 - (theirCarIdx - idx)) % 7);
     }
 
     if (state->teams & bit) {
