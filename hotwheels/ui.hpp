@@ -4,9 +4,9 @@
 #include "game.hpp"
 
 #ifdef __WIN32
-#define adversareval_googly_txt_len 852
+#define adversareval_googly_txt_len 853
 #else
-#define adversareval_googly_txt_len 1064
+#define adversareval_googly_txt_len 1065
 #endif
 extern unsigned char adversareval_googly_txt[adversareval_googly_txt_len];
 
