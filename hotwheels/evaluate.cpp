@@ -22,12 +22,12 @@ signed short evaluate(const GameState* state) {
     pieces ^= bit;
 
     if ((myTrack & bit) && (bit > myCar)) {
-      eval -= 20;
+      eval -= 15;
       //eval -= ((idx - 1) % 7);
       //eval -= 10 * ((idx - 1) % 7);
     }
     else if ((theirTrack & bit) && ((((theirCarIdx - 1) % 7) < ((idx - 1) % 7)))) {
-      eval += 20;
+      eval += 15;
       //eval += ((idx - 1) % 7);
       //eval += 10 * ((idx - 1) % 7);
       //eval += ((8 - (theirCarIdx - idx)) % 7);
