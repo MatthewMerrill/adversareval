@@ -15,34 +15,61 @@ signed short evaluate(const GameState* state) {
 
   U64 bit = 1;
   signed short eval = 0;
-  int idx; 
+  unsigned int idx; 
   U64 pieces = state->pieces;
   while ((idx = bitscanll(pieces))) {
     bit = 1ULL << (idx-1);
     pieces ^= bit;
 
     if ((myTrack & bit) && (bit > myCar)) {
-      eval -= 10;
-      eval -= ((idx - 1) % 7);
-      eval += ((8 - (myCarIdx - idx)) % 7);
+      eval -= 20;
+      //eval -= ((idx - 1) % 7);
+      //eval -= 10 * ((idx - 1) % 7);
     }
-    else if ((theirTrack & bit) && ((bit < theirCar) ? (theirCarIdx - idx > 7) : (idx - theirCarIdx < 7))) {
-      eval += 10;
-      eval += ((idx - 1) % 7);
-      eval -= ((8 - (theirCarIdx - idx)) % 7);
+    else if ((theirTrack & bit) && ((((theirCarIdx - 1) % 7) < ((idx - 1) % 7)))) {
+      eval += 20;
+      //eval += ((idx - 1) % 7);
+      //eval += 10 * ((idx - 1) % 7);
+      //eval += ((8 - (theirCarIdx - idx)) % 7);
     }
 
     if (state->teams & bit) {
       if (state->cars & bit) {
-        eval -= 20 * ((idx - 1) % 7);
+        eval -= 40 * ((idx - 1) % 7);
       }
-      eval -= 1;
+      /*
+      else if (state->rooks & bit) {
+        eval -= 15;
+      }
+      else if (state->bishops & bit) {
+        eval -= 15;
+      }
+      else if (state->knights & bit) {
+        eval -= 15;
+      }*/
+      //else if (state->pawns & bit) {
+      //  eval += idx / 7;
+      //}
+      //eval -= 1;
     }
     else {
       if (state->cars & bit) {
-        eval += 20 * ((idx - 1) % 7);
+        eval += 40 * ((idx - 1) % 7);
       }
-      eval += 1;
+      /*
+      else if (state->rooks & bit) {
+        eval += 15;
+      }
+      else if (state->bishops & bit) {
+        eval += 15;
+      }
+      else if (state->knights & bit) {
+        eval += 15;
+      }*/
+      //else if (state->pawns & bit) {
+      //  eval -= 7 - (idx / 7);
+      //}
+      //eval += 1;
     }
   }
   return eval;

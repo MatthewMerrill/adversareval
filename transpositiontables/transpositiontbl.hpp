@@ -22,6 +22,8 @@ namespace tt {
   enum Bound{EXACT, UPPER, LOWER};
   struct TTRec {
     S16 val;
+    S16 lowerBound;
+    S16 upperBound;
     signed char depth;
     Move bestMove;
     Bound bound;
@@ -34,12 +36,15 @@ namespace tt {
       bound = Bound::EXACT;
     }
 
-    TTRec(S16 v, signed char d, Move bm, Bound b):
-      val(v), depth(d), bestMove(bm), bound(b) {}
+    TTRec(S16 v,  signed char d, Move bm, Bound b):
+      val(v), lowerBound(v), upperBound(v), depth(d), bestMove(bm), bound(b) {}
+
+    TTRec(S16 v, S16 lb, S16 ub, signed char d, Move bm, Bound b):
+      val(v), lowerBound(lb), upperBound(ub), depth(d), bestMove(bm), bound(b) {}
   };
 //*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
-  thread_local extern pair<U64, TTRec>* bufs;
+  extern pair<U64, TTRec>* bufs;
   extern U64 MOD;
 
   static inline void init() {

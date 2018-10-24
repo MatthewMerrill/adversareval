@@ -58,7 +58,6 @@ void populateFBuf(const GameState* state) {
 }
 
 void Ponder(GameState state) {
-  return;
   int depth = 5;
   std::lock_guard<std::mutex> guard(mm_mutex);
   while (start == 0) {
@@ -81,13 +80,13 @@ Move MyBestMove(const GameState* state) {
   populateFBuf(state);
 
   start = time(NULL); 
-  while (depth < 30 && time(NULL) - start < MINIMAX_TIME_CUTOFF) {
+  while (depth < 50 && time(NULL) - start < MINIMAX_TIME_CUTOFF) {
     printf("\nDepth %2d: ", depth);
     evalsDone = 0;
     const auto p = MyBestMoveAtDepthMTDF(state, depth);
     if (p.second == 20000 || p.second == -20000) {
       textfg(RED);
-      printf("ABORT! Interrupted at depth %d\n", depth);
+      printf("ABORT! Interrupted at depth %d", depth);
       resettext();
       break;
     }
@@ -99,7 +98,7 @@ Move MyBestMove(const GameState* state) {
     // We Win!
     if (p.second >= 10000) {
       textfg(BLUE);
-      printf("\n          This is going to be very painful......       for you!.\n");
+      printf("\n          This is going to be very painful......       for you!.");
       resettext();
       std::cout << std::flush;
       break;
@@ -107,7 +106,7 @@ Move MyBestMove(const GameState* state) {
     // They Win!
     else if (p.second <= -10000) {
       textfg(BLUE);
-      printf("\n          This is going to be very painful......\n");
+      printf("\n          This is going to be very painful......");
       resettext();
       std::cout << std::flush;
       break;
@@ -120,6 +119,7 @@ Move MyBestMove(const GameState* state) {
       ++depth;
     }
   }
+  printf("\n");
   start = 0;
   tt::clear();
   return best;
@@ -130,6 +130,11 @@ void launchAlphaBeta(const GameState* state, Move move, int moveIdx, int depth) 
   thEvalsDone[moveIdx] = 0;
   S16 f = -negamax(&newState, depth - 1, -20000, 20000, epoch + 1, moveIdx);
   fBuf[moveIdx] = f;
+}
+void launchAlphaBetaItr(const GameState* state, Move* childMoves, int depth, int from, int to, int by) {
+  for (int moveIdx = from; moveIdx < to; moveIdx += by) {
+    launchAlphaBeta(state, childMoves[moveIdx], moveIdx, depth);
+  }
 }
 
 pair<Move, S16> MyBestMoveAtDepthAB(const GameState* state, int depth) {
@@ -212,6 +217,11 @@ void launchMTDF(const GameState* state, Move move, int moveIdx, int depth) {
   f = -MTDF(&newState, -f, depth - 1, epoch + 1, moveIdx);
   fBuf[moveIdx] = f;
 }
+void launchBatchMTDF(const GameState* state, Move* childMoves, int depth, int from, int to, int by) {
+  for (int moveIdx = from; moveIdx < to; moveIdx += by) {
+    launchMTDF(state, childMoves[moveIdx], moveIdx, depth);
+  }
+}
 
 pair<Move, S16> MyBestMoveAtDepthMTDF(const GameState* state, int depth) {
   S16 value = -20000;
@@ -286,13 +296,59 @@ pair<Move, S16> MyBestMoveAtDepthMTDFParallel(const GameState* state, int depth)
   return std::make_pair(childMoves[bestIdx], value);
 }
 
+pair<Move, S16> MyBestMoveAtDepthBatchMTDFParallel(const GameState* state, int depth) {
+  S16 value = -20000;
+  Move childMoves[MOVE_ARR_LEN];
+  int nmoves = GetMoves(state, childMoves);
+  int bestIdx = 0;
+  int numEq = 0;
+  int nbatches = ((nmoves - 1) / 4) + 1;
+
+  if (nmoves <= nbatches) {
+    printf("Only %d moves! Resorting to Serial.\n", nmoves);
+    return MyBestMoveAtDepthMTDF(state, depth);
+  }
+
+  for (int batchIdx = 0; batchIdx < nbatches && batchIdx < nmoves; ++batchIdx) {
+    mtdfThreads[batchIdx] = (std::thread(launchBatchMTDF, state, childMoves, depth, batchIdx, nmoves, nbatches));
+  }
+
+  for (int batchIdx = 0; batchIdx < nbatches && batchIdx < nmoves; ++batchIdx) {
+    mtdfThreads[batchIdx].join();
+    for (int moveIdx = batchIdx; moveIdx < nmoves; moveIdx += nbatches) {
+      evalsDone += thEvalsDone[moveIdx];
+      S16 f = fBuf[moveIdx];
+
+      // ABORT
+      if (f == 20000 || f == -20000) {
+        while (++batchIdx < nbatches) {
+          mtdfThreads[batchIdx].join();
+        }
+        return std::make_pair(Move(), f);
+      }
+
+      if (f > value) {
+        value = f;
+        bestIdx = moveIdx;
+        numEq = 1;
+      }
+      // Uniformly select from moves with same evaluation
+      else if (f == value && randomUniform01() * ++numEq < 1) {
+        value = f;
+        bestIdx = moveIdx;
+      }
+    }
+  }
+  return std::make_pair(childMoves[bestIdx], value);
+}
+
 //https://www.chessprogramming.org/MTD(f)#C_Pseudo_Code
 S16 MTDF(const GameState* state, S16 f, int depth, int epoch, int thIdx) {
   S16 bound[2] = { -20000, +20000 };
   do {
     //printf("MTDF: { %7d, %7d }\n          ", bound[0], bound[1]);
     S16 beta = (f >= (bound[0] + 1)) ? f : (bound[0] + 1);
-    f = negamax(state, depth, beta - 1, beta, epoch, thIdx);
+    f = negamaxWithMemory(state, depth, beta - 1, beta, epoch, thIdx);
     bound[f < beta] = f;
   } while (f != 20000 && f != -20000 && bound[0] < bound[1]);
   return f;
@@ -322,6 +378,7 @@ S16 negamax(const GameState* state, int depth, S16 alpha, S16 beta, int epoch, i
     if (ttrec.depth >= depth && ttrec.bound == tt::Bound::EXACT) {
       return ttrec.val;
     }
+    // Theodore's highly questionable suggestion.
     //alpha = ttrec.val;
   }
 
@@ -375,3 +432,86 @@ S16 negamax(const GameState* state, int depth, S16 alpha, S16 beta, int epoch, i
   }
   return value;
 }
+
+// http://people.csail.mit.edu/plaat/mtdf.html#abmem
+S16 negamaxWithMemory(const GameState* state, int depth, S16 alpha, S16 beta, int epoch, int thIdx) {
+  int winner = state->GetWinner();
+  if (winner == 1) {
+    return 10099 - epoch;
+  }
+  else if (winner == -1) {
+    return -10099 + epoch;
+  }
+
+  if (start == 1 || (start != 0 && time(NULL) - start > MINIMAX_TIME_CUTOFF)) {
+    return 20000;
+  }
+
+  const auto p = tt::getValue(state);
+  if (p.first == state->hashCode) {
+    const auto ttrec = p.second;
+    if (ttrec.lowerBound > beta) {
+      return ttrec.lowerBound;
+    }
+    else if (ttrec.upperBound <= alpha) {
+      return ttrec.upperBound;
+    }
+    alpha = (alpha > ttrec.lowerBound) ? alpha : ttrec.lowerBound;
+    beta = (beta < ttrec.upperBound) ? beta : ttrec.upperBound;
+  }
+
+  Move childMoves[MOVE_ARR_LEN];
+  int bestMoveIdx = 0;
+  S16 value;
+
+  if (depth <= 0) {
+    thEvalsDone[thIdx]++;
+    value = evaluate(state);
+  }
+  else {
+    value = -20000;
+    S16 oldAlpha = alpha;
+
+    int nmoves = GetMoves(state, childMoves);
+    std::sort(childMoves, childMoves + nmoves, hl::keyCmp);
+
+    if (nmoves == 0) {
+      std::cerr << "WARN: Umm this shouldn't be possible! Err: 012938";
+    }
+    for (signed char idx = 0; idx < nmoves && value < beta; ++idx) {
+      Move move = childMoves[idx];
+      GameState newState = state->ApplyMove(move).Invert();
+      S16 nm = -negamaxWithMemory(&newState, depth-1, -beta, -alpha, epoch + 1, thIdx);
+      // ABORT
+      if (nm == 20000 || nm == -20000) {
+        return nm;
+      }
+      if (nm > value) {
+        value = nm;
+        bestMoveIdx = idx;
+      }
+      alpha = (alpha > value) ? alpha : value;
+    }
+    alpha = oldAlpha;
+  }
+  if (20000 > value && value > -20000) {
+    hl::incrementTable(childMoves[bestMoveIdx], 100);
+    if (depth > 2) {
+      // Fail Low
+      if (value <= alpha) {
+        tt::setValue(state, TTRec(value, -20000, value, depth, childMoves[bestMoveIdx], tt::Bound::UPPER));
+      }
+      // Fail High
+      else if (value >= beta){
+        tt::setValue(state, TTRec(value, value, 20000, depth, childMoves[bestMoveIdx], tt::Bound::LOWER));
+      }
+      // Accurate Value
+      else {
+        tt::setValue(state, TTRec(value, value, value, depth, childMoves[bestMoveIdx], tt::Bound::EXACT));
+      }
+    }
+  }
+  return value;
+}
+
+

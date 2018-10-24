@@ -142,6 +142,10 @@ int humanVsComputer() {
       else {
         std::cout << "Somebody wins!" << std::endl;
       }
+      StopPondering();
+      if (ponderThread.joinable()) {
+        ponderThread.join();
+      }
       std::cin.ignore();
       std::cin.ignore();
       break;
@@ -212,6 +216,7 @@ int humanVsComputer() {
     turn ^= 1;
   }
 #ifdef NN_EVAL
+  printf("Unloading NN...\n");
   nn::unloadGraph();
 #endif
 
