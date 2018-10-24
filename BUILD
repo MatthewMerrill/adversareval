@@ -99,7 +99,7 @@ cc_binary(
         "transpositiontables/**/*.hpp",
         "nn/**/*.cpp",
         "nn/**/*.hpp",
-    ], exclude=["hotwheels/evaluate.cpp"]),
+    ], exclude=["hotwheels/evaluate.cpp", "nn/featureeng.cpp"]),
   linkopts = ["-pthread"],
   data = glob(["models/**/*.pb", "models/**/*.json"]),
   deps = ["@frugallydeep//:frugallydeep"],

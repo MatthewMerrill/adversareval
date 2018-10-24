@@ -244,6 +244,7 @@ int computerVsComputer() {
     ui::historyVector.clear();
     tt::clear();
     for (;;) {
+      tt::clear();
       epoch += 1;
       winner = state.GetWinner();
       if (winner) {

@@ -39,12 +39,11 @@ namespace tt {
   };
 //*
   // bufs[16] holds the backing vector for GameStates with 16 pieces
-  extern pair<U64, TTRec>* bufs;
+  thread_local extern pair<U64, TTRec>* bufs;
   extern U64 MOD;
-  extern signed char epoch;
 
   static inline void init() {
-    printf("How many GB Ram can you burn? ");
+   /* printf("How many GB Ram can you burn? ");
     double inp;
     std::cin >> inp;
     inp *= 1000000000.0;
@@ -54,7 +53,7 @@ namespace tt {
     bufs = new pair<U64, TTRec>[MOD + 1];
     for (unsigned long long idx = 0; idx < MOD + 1; idx += 256) {
       *(volatile char*) (bufs + idx);
-    }
+    }*/
   }
 
   static inline void setValue(const GameState* state, TTRec rec) {

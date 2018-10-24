@@ -6,7 +6,7 @@
 
 namespace hl {
 
-extern signed long long historyTable[56 * 56];
+thread_local extern signed long long historyTable[56 * 56];
 
 static inline bool keyCmp(const Move a, const Move b) {
   signed long long av = historyTable[56 * a.fromIdx + a.toIdx];

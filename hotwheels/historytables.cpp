@@ -2,7 +2,7 @@
 #include <algorithm>
 
 namespace hl {
-  signed long long historyTable[56 * 56] = { 0 };
+  thread_local signed long long historyTable[56 * 56] = { 0 };
 
   void incrementTable(const Move m, int amount) {
     historyTable[56 * m.fromIdx + m.toIdx] += amount;

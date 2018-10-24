@@ -8,8 +8,8 @@
 
 namespace tt {
   //*
-  pair<U64, TTRec>* bufs;
-  U64 MOD;
+  thread_local pair<U64, TTRec>* bufs = new pair<U64, TTRec>[ 1000000 ];
+  U64 MOD = 1000000;
   /*/
   std::unordered_map<GameState, TTRec> tbl = {};
 
