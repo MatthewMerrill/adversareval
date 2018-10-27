@@ -1,7 +1,7 @@
 #ifndef BITSCAN_HPP
 #define BITSCAN_HPP
 
-#ifdef __linux__
+#if __GNUC__
 static inline unsigned long bitscanll(unsigned long long l) {
   return __builtin_ffsll(l);
 }
@@ -26,15 +26,7 @@ static inline unsigned int popcount(unsigned __int64 l) {
 }
 
 #else
-#include <iostream>
-static unsigned long bitscanll(unsigned long long l) {
-  std::cout << "AGH IDK THIS PLATFORM" << std::endl;
-  return 0;
-}
-static unsigned long popcount(unsigned long long l) {
-  std::cout << "AGH IDK THIS PLATFORM" << std::endl;
-  return 0;
-}
+#error "AGH IDK THIS PLATFORM"
 #endif
 
 #endif
